@@ -1,0 +1,212 @@
+Build a full-stack quantitative finance web application called "Quant Portfolio Lab".
+
+TECH STACK:
+
+Backend: Python (Flask)
+Frontend: HTML, CSS, JavaScript
+Libraries: pandas, numpy, yfinance, plotly, scipy, functools, logging
+
+
+FOLDER STRUCTURE:
+quant-portfolio-lab/
+├── app.py
+├── requirements.txt
+├── README.md
+├── templates/
+│   └── index.html
+├── static/
+│   ├── style.css
+│   └── script.js
+└── utils/
+    ├── analytics.py
+    ├── optimization.py
+    ├── backtest.py
+    ├── simulation.py
+    ├── rebalancing.py
+    ├── sector.py
+    └── risk_score.py
+
+ANNUALIZATION ASSUMPTIONS:
+
+Use 252 trading days per year for all return and volatility calculations
+Volatility scaling: multiply daily variance by 252 before taking square root
+All metrics reported on annualized basis unless explicitly stated otherwise
+
+
+INPUT VALIDATION RULES:
+
+Maximum 10 tickers
+Weights must sum to 1.0; normalize automatically after skipping invalid tickers
+If a ticker returns no data, skip it, re-normalize remaining weights proportionally, and notify user which tickers were skipped
+Date range minimum 1 year, maximum 10 years
+Risk-free rate must be between 0.0 and 0.2; default 0.04
+If sector metadata unavailable for a ticker, label it "Unknown" and continue
+If S&P 500 benchmark data (^GSPC) is unavailable, make benchmark comparison optional and notify user
+
+
+DATA ALIGNMENT:
+
+Align all ticker time series using inner join on dates
+Forward-fill gaps of 1–2 trading days only
+Drop any asset with less than 80% date coverage after alignment
+Re-normalize weights after any assets are dropped
+
+
+STATE MANAGEMENT:
+
+Frontend sends full ticker list, weights, date range, and risk-free rate with every request
+Backend is fully stateless; no Flask session
+All responses return JSON with consistent structure:
+{ "status": "success", "data": {...}, "insight": "..." }
+All errors return:
+{ "status": "error", "message": "..." } with HTTP 400
+
+
+PERFORMANCE REQUIREMENTS:
+
+Cache yfinance price data using functools.lru_cache with maxsize=32; convert tickers to tuple before caching
+Cache sector metadata per ticker using a separate lru_cache
+Use vectorized NumPy and Pandas operations for all matrix calculations; minimal Python loops permitted only for orchestration logic such as iterating over routes or building response objects
+Cap optimization at 5,000 portfolios
+Cap Monte Carlo at 1,000 paths
+Target all API responses within 3 seconds under normal conditions
+
+
+LOGGING:
+
+Implement Python logging module at INFO level throughout
+Log the following:
+
+Each API request with endpoint name and timestamp
+Any skipped tickers with reason
+Any weight re-normalization events
+All exceptions with full traceback
+Response time for each request in milliseconds
+
+
+
+
+CORE FEATURES:
+1. DATA FETCHING
+
+Accept comma-separated tickers and date range
+Fetch adjusted closing prices via yfinance
+Apply data alignment rules above
+Compute daily returns and cumulative returns
+Return clean JSON with price history and return series
+
+2. PORTFOLIO ANALYTICS
+
+Annualized return
+Annualized volatility (252-day scaling)
+Sharpe ratio
+Sortino ratio (downside deviation using only negative daily returns)
+Maximum drawdown
+Correlation matrix as interactive Plotly heatmap
+
+3. PORTFOLIO OPTIMIZATION
+
+Generate 5,000 random portfolios using vectorized NumPy
+Calculate annualized return, volatility, Sharpe ratio for each
+Identify Maximum Sharpe portfolio
+Identify Minimum Volatility portfolio
+Plot Efficient Frontier using Plotly with Sharpe ratio color scale
+
+4. BACKTESTING ENGINE
+
+User inputs portfolio weights
+Compare against S&P 500 (^GSPC); make optional if benchmark data unavailable
+Plot cumulative returns over selected period using Plotly
+Display metrics table for both portfolio and benchmark: annualized return, volatility, Sharpe ratio, max drawdown
+
+5. MONTE CARLO SIMULATION
+
+Simulate 1,000 paths over user-defined horizon (1–10 years)
+Use historical mean returns and covariance matrix
+Plot all paths with 5th, 50th, 95th percentile confidence bands
+Display final value distribution with probability statistics
+
+6. DYNAMIC REBALANCING SIMULATOR
+
+User selects rebalancing frequency: monthly, quarterly, or yearly
+Simulate weight drift over time without rebalancing
+Simulate portfolio with rebalancing at each interval
+Compare cumulative returns on single Plotly chart
+Show asset weight drift chart for both scenarios
+Display performance difference metrics between strategies
+
+7. SECTOR EXPOSURE ANALYZER
+
+Map each ticker to sector using yf.Ticker(t).info.get('sector', 'Unknown')
+Cache sector lookups with lru_cache
+Display sector allocation as interactive Plotly pie chart
+Show sector breakdown table with per-stock contributions
+Flag over-concentration warning if any single sector exceeds 40%
+
+8. QPL RISK INDEX
+
+Compute composite risk score:
+QPL Risk Index = 0.4 * normalized_volatility + 0.35 * (normalized_max_drawdown²) + 0.25 * normalized_downside_deviation
+Normalize all components to 0–100 scale using np.interp against a baseline of 20% annualized volatility as the 100-point anchor
+Nonlinear penalty: square the normalized drawdown component before weighting
+Display score on Plotly gauge chart from 0 to 100
+Interpretation labels:
+
+0–20: Very Conservative
+20–40: Conservative
+40–60: Moderate
+60–80: Aggressive
+80–100: High Risk
+
+
+Compare user portfolio score against Max Sharpe and Min Volatility portfolios
+
+9. INSIGHT ENGINE
+
+Auto-generate a 2–3 sentence plain-English summary after every analysis
+Must include:
+
+Volatility vs return tradeoff observation
+Sector concentration warning if any sector exceeds 40%
+Whether rebalancing improved risk-adjusted returns and by how much
+Explicit benchmark comparison from backtest if available
+QPL Risk Index interpretation
+
+
+Example: "Your portfolio's annualized return of 14.2% comes with above-average volatility of 18.6%, presenting an unfavorable tradeoff versus the benchmark. Technology represents 65% of your holdings, creating significant concentration risk. Quarterly rebalancing improves your Sharpe ratio by 0.18 over the selected period."
+
+
+DASHBOARD UI:
+
+Single-page dashboard with fixed left sidebar navigation
+Sections: Overview, Efficient Frontier, Backtest, Monte Carlo, Rebalancing, Sector Exposure, Risk Score
+Input panel at top: tickers, weights, date range, risk-free rate
+All charts Plotly (interactive, zoomable, hoverable)
+Dark modern theme, clean typography
+Loading spinner on every fetch and calculation
+CSV export on analytics summary and backtest results; export includes both raw return tables and metrics summaries
+
+
+API ROUTES:
+
+POST /analytics
+POST /optimize
+POST /backtest
+POST /simulate
+POST /rebalance
+POST /sector
+POST /riskscore
+
+All routes: accept JSON body, return consistent JSON response, wrapped in try/except, log request timing
+
+DEPLOYMENT:
+
+Runs on 0.0.0.0 port 5000
+requirements.txt with all dependencies pinned:
+
+flask==3.0.0, pandas==2.1.1, numpy==1.26.0, yfinance==0.2.31, plotly==5.17.0, scipy==1.11.3
+
+
+README.md with setup instructions, full feature list, and description: "Institutional-grade portfolio analytics for everyone without a Bloomberg terminal."
+Concise docstrings on every function; inline comments on non-obvious logic only
+Fully functional on first run with no additional configuration

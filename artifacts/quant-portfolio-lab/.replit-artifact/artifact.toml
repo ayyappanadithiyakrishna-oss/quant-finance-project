@@ -13,3 +13,14 @@ PORT = "5000"
 
 [services.development]
 run = "python app.py"
+
+[services.production]
+
+[services.production.build]
+args = ["bash", "-lc", "pip install --no-cache-dir -r artifacts/quant-portfolio-lab/requirements.txt gunicorn==21.2.0"]
+
+[services.production.run]
+args = ["bash", "-lc", "cd artifacts/quant-portfolio-lab && gunicorn --workers 2 --threads 4 --timeout 120 --bind 0.0.0.0:${PORT} app:app"]
+
+[services.production.run.env]
+PORT = "5000"

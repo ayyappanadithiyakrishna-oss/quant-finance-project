@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quant Portfolio Lab</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark">QPL</span>
+      <span class="brand-name">Quant Portfolio Lab</span>
+    </div>
+    <nav>
+      <a href="#overview" class="nav-link active" data-section="overview">Overview</a>
+      <a href="#frontier" class="nav-link" data-section="frontier">Efficient Frontier</a>
+      <a href="#backtest" class="nav-link" data-section="backtest">Backtest</a>
+      <a href="#montecarlo" class="nav-link" data-section="montecarlo">Monte Carlo</a>
+      <a href="#rebalance" class="nav-link" data-section="rebalance">Rebalancing</a>
+      <a href="#sector" class="nav-link" data-section="sector">Sector Exposure</a>
+      <a href="#risk" class="nav-link" data-section="risk">Risk Score</a>
+    </nav>
+    <div class="sidebar-footer">
+      Institutional-grade analytics<br/>without a Bloomberg terminal.
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="inputs">
+        <div class="field">
+          <label>Tickers (comma-separated, max 10)</label>
+          <input id="tickers" type="text" value="AAPL, MSFT, GOOGL, AMZN, JPM" />
+        </div>
+        <div class="field">
+          <label>Weights (comma-separated, optional)</label>
+          <input id="weights" type="text" placeholder="auto-equal if blank" />
+        </div>
+        <div class="field small">
+          <label>Start date</label>
+          <input id="start" type="date" />
+        </div>
+        <div class="field small">
+          <label>End date</label>
+          <input id="end" type="date" />
+        </div>
+        <div class="field tiny">
+          <label>Risk-free</label>
+          <input id="rf" type="number" step="0.005" min="0" max="0.2" value="0.04" />
+        </div>
+        <button id="run-btn" class="primary">Run Analysis</button>
+      </div>
+      <div id="skipped-warning" class="skipped"></div>
+    </header>
+
+    <section id="overview" class="card-grid section">
+      <h2>Overview</h2>
+      <div id="overview-loading" class="loading hidden"><div class="spinner"></div></div>
+      <div id="metrics-grid" class="metrics-grid"></div>
+      <div class="chart-row">
+        <div class="chart-half"><div id="cumchart"></div></div>
+        <div class="chart-half"><div id="corrchart"></div></div>
+      </div>
+      <div class="insight" id="overview-insight"></div>
+      <div class="actions"><button id="export-overview">Export CSV</button></div>
+    </section>
+
+    <section id="frontier" class="section">
+      <h2>Efficient Frontier</h2>
+      <div id="frontier-loading" class="loading hidden"><div class="spinner"></div></div>
+      <div id="frontier-chart"></div>
+      <div class="metrics-grid two">
+        <div class="metric-card">
+          <div class="metric-label">Max Sharpe</div>
+          <div id="max-sharpe-detail"></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Min Volatility</div>
+          <div id="min-vol-detail"></div>
+        </div>
+      </div>
+      <div class="insight" id="frontier-insight"></div>
+    </section>
+
+    <section id="backtest" class="section">
+      <h2>Backtest vs S&P 500</h2>
+      <div id="backtest-loading" class="loading hidden"><div class="spinner"></div></div>
+      <div id="backtest-chart"></div>
+      <div id="backtest-metrics"></div>
+      <div class="insight" id="backtest-insight"></div>
+      <div class="actions"><button id="export-backtest">Export CSV</button></div>
+    </section>
+
+    <section id="montecarlo" class="section">
+      <h2>Monte Carlo Simulation</h2>
+      <div class="inline-input">
+        <label>Horizon (years)</label>
+        <input id="horizon" type="number" min="1" max="10" step="1" value="3" />
+        <button id="run-mc">Simulate</button>
+      </div>
+      <div id="mc-loading" class="loading hidden"><div class="spinner"></div></div>
+      <div id="mc-chart"></div>
+      <div id="mc-hist"></div>
+      <div class="insight" id="mc-insight"></div>
+    </section>
+
+    <section id="rebalance" class="section">
+      <h2>Dynamic Rebalancing</h2>
+      <div class="inline-input">
+        <label>Frequency</label>
+        <select id="rebal-freq">
+          <option value="monthly">Monthly</option>
+          <option value="quarterly" selected>Quarterly</option>
+          <option value="yearly">Yearly</option>
+        </select>
+        <button id="run-rebal">Simulate</button>
+      </div>
+      <div id="rebal-loading" class="loading hidden"><div class="spinner"></div></div>
+      <div id="rebal-chart"></div>
+      <div class="chart-row">
+        <div class="chart-half"><div id="drift-weights-chart"></div></div>
+        <div class="chart-half"><div id="rebal-weights-chart"></div></div>
+      </div>
+      <div id="rebal-metrics"></div>
+      <div class="insight" id="rebal-insight"></div>
+    </section>
+
+    <section id="sector" class="section">
+      <h2>Sector Exposure</h2>
+      <div id="sector-loading" class="loading hidden"><div class="spinner"></div></div>
+      <div class="chart-row">
+        <div class="chart-half"><div id="sector-pie"></div></div>
+        <div class="chart-half"><div id="sector-table"></div></div>
+      </div>
+      <div class="insight" id="sector-insight"></div>
+    </section>
+
+    <section id="risk" class="section">
+      <h2>QPL Risk Index</h2>
+      <div id="risk-loading" class="loading hidden"><div class="spinner"></div></div>
+      <div class="chart-row">
+        <div class="chart-half"><div id="risk-gauge"></div></div>
+        <div class="chart-half"><div id="risk-compare"></div></div>
+      </div>
+      <div class="insight" id="risk-insight"></div>
+    </section>
+
+    <div id="error-toast" class="toast hidden"></div>
+  </main>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

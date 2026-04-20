@@ -1,0 +1,15 @@
+kind = "web"
+previewPath = "/"
+title = "Quant Portfolio Lab"
+version = "1.0.0"
+
+[[services]]
+localPort = 5000
+name = "Quant Portfolio Lab"
+paths = ["/"]
+
+[services.env]
+PORT = "5000"
+
+[services.development]
+run = "python app.py"

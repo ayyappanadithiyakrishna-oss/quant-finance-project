@@ -1,12 +1,9 @@
 modules = ["nodejs-24", "python-3.11"]
 
 [deployment]
-router = "application"
 deploymentTarget = "autoscale"
-
-[deployment.postBuild]
-args = ["pnpm", "store", "prune"]
-env = { "CI" = "true" }
+build = ["bash", "-lc", "pip install --no-cache-dir -r artifacts/quant-portfolio-lab/requirements.txt gunicorn==21.2.0"]
+run = ["bash", "-lc", "cd artifacts/quant-portfolio-lab && gunicorn --workers 2 --threads 4 --timeout 120 --bind 0.0.0.0:$PORT app:app"]
 
 [workflows]
 

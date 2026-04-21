@@ -32,6 +32,7 @@
       <a href="#sector" class="nav-link" data-section="sector"><span class="nav-icon">◍</span>Sector Exposure</a>
       <a href="#risk" class="nav-link" data-section="risk"><span class="nav-icon">◑</span>Risk Score</a>
       <div class="nav-group-label">Learn</div>
+      <a href="#how-it-works" class="nav-link" data-section="how-it-works"><span class="nav-icon">▶</span>How It Works</a>
       <a href="#explanations" class="nav-link" data-section="explanations"><span class="nav-icon">✦</span>Explanations</a>
     </nav>
     <div class="sidebar-footer">
@@ -42,28 +43,35 @@
 
   <main class="main">
     <header class="topbar">
-      <div class="inputs">
-        <div class="field">
-          <label>Tickers <span class="hint">(comma-separated, max 10)</span></label>
-          <input id="tickers" type="text" value="AAPL, MSFT, GOOGL, AMZN, JPM" />
+      <div class="topbar-grid">
+        <div class="field field-tickers">
+          <label>Tickers <span class="hint">max 10</span></label>
+          <input id="tickers" type="text" value="AAPL, MSFT, GOOGL, AMZN, JPM" autocomplete="off" spellcheck="false" />
         </div>
-        <div class="field">
-          <label>Weights <span class="hint">(optional, comma-separated)</span></label>
-          <input id="weights" type="text" placeholder="auto-equal if blank" />
+        <div class="field field-weights">
+          <label>Weights <span class="hint">optional</span></label>
+          <input id="weights" type="text" placeholder="auto-equal if blank" autocomplete="off" spellcheck="false" />
         </div>
-        <div class="field small">
-          <label>Start date</label>
+        <div class="field field-date">
+          <label>Start</label>
           <input id="start" type="date" />
         </div>
-        <div class="field small">
-          <label>End date</label>
+        <div class="field field-date">
+          <label>End</label>
           <input id="end" type="date" />
         </div>
-        <div class="field tiny">
-          <label>Risk-free <span class="hint">(annual)</span></label>
-          <input id="rf" type="number" step="0.005" min="0" max="0.2" value="0.04" />
+        <div class="field field-rf">
+          <label>Risk-free <span class="hint">annual</span></label>
+          <div class="input-with-suffix">
+            <input id="rf" type="number" step="0.25" min="0" max="20" value="4" />
+            <span class="suffix">%</span>
+          </div>
         </div>
-        <button id="run-btn" class="primary">Run Analysis</button>
+        <div class="field field-action">
+          <button id="run-btn" class="primary">
+            <span class="btn-icon">▶</span> Run Analysis
+          </button>
+        </div>
       </div>
       <div id="skipped-warning" class="skipped"></div>
     </header>
@@ -193,6 +201,120 @@
         <div class="chart-half"><div id="risk-compare"></div></div>
       </div>
       <div class="insight" id="risk-insight"></div>
+    </section>
+
+    <section id="how-it-works" class="section how-it-works">
+      <header class="section-head">
+        <div>
+          <h2>How It Works</h2>
+          <p class="section-sub">A behind-the-scenes tour of what happens when you click "Run Analysis."</p>
+        </div>
+      </header>
+
+      <div class="hiw-callout">
+        <div class="hiw-callout-icon">i</div>
+        <div>
+          <strong>Quant Portfolio Lab is a research &amp; education tool — not a brokerage.</strong>
+          It does <em>not</em> place real trades, connect to your broker, or move any money. Everything you see is computed from
+          historical price data using standard quantitative-finance math. Think of it as a sandbox for testing portfolio ideas
+          before you ever risk a dollar in a real account.
+        </div>
+      </div>
+
+      <h3 class="hiw-section-title">The Pipeline</h3>
+      <ol class="hiw-pipeline">
+        <li>
+          <div class="hiw-step-num">1</div>
+          <div class="hiw-step-body">
+            <h4>You enter inputs</h4>
+            <p>Up to 10 tickers, optional weights, a date range, and a risk-free rate. Weights default to equal-weight if you leave them blank.</p>
+          </div>
+        </li>
+        <li>
+          <div class="hiw-step-num">2</div>
+          <div class="hiw-step-body">
+            <h4>The browser sends your request to the Flask server</h4>
+            <p>Each tab (Overview, Frontier, Backtest, …) hits a separate API endpoint — <code>/analytics</code>, <code>/optimize</code>, <code>/backtest</code>, <code>/simulate</code>, <code>/rebalance</code>, <code>/sector</code>, <code>/riskscore</code> — in parallel.</p>
+          </div>
+        </li>
+        <li>
+          <div class="hiw-step-num">3</div>
+          <div class="hiw-step-body">
+            <h4>The server fetches historical prices from Yahoo Finance</h4>
+            <p>We use the open-source <code>yfinance</code> library to pull daily adjusted-close prices for every ticker over your window. If a ticker doesn't have a full history, it's flagged and skipped.</p>
+          </div>
+        </li>
+        <li>
+          <div class="hiw-step-num">4</div>
+          <div class="hiw-step-body">
+            <h4>Prices become returns</h4>
+            <p>For each stock we compute daily log returns: <code>r<sub>t</sub> = ln(P<sub>t</sub> / P<sub>t-1</sub>)</code>. From the matrix of daily returns we derive the mean-vector, covariance matrix, and rolling drawdown series — the inputs every model needs.</p>
+          </div>
+        </li>
+        <li>
+          <div class="hiw-step-num">5</div>
+          <div class="hiw-step-body">
+            <h4>Each module runs its own model</h4>
+            <p>Pure NumPy / SciPy. The Frontier samples 5,000 random weights. Monte Carlo Cholesky-decomposes the covariance and simulates 1,000 GBM paths. Rebalancing replays history with periodic weight resets. Sector pulls each ticker's GICS classification.</p>
+          </div>
+        </li>
+        <li>
+          <div class="hiw-step-num">6</div>
+          <div class="hiw-step-body">
+            <h4>Results stream back as JSON</h4>
+            <p>Plotly renders the charts in your browser. The Insight Engine turns the numbers into one-sentence plain-English summaries.</p>
+          </div>
+        </li>
+      </ol>
+
+      <h3 class="hiw-section-title">"How does it take trades?" — It doesn't.</h3>
+      <div class="hiw-grid">
+        <div class="hiw-card">
+          <h4>What this app DOES</h4>
+          <ul class="hiw-check">
+            <li>Pulls real historical market data</li>
+            <li>Calculates risk-adjusted returns (Sharpe, Sortino)</li>
+            <li>Optimizes hypothetical weight allocations</li>
+            <li>Simulates thousands of possible futures</li>
+            <li>Visualizes drift, drawdown, sector concentration</li>
+            <li>Helps you compare portfolio ideas side-by-side</li>
+          </ul>
+        </div>
+        <div class="hiw-card hiw-card-x">
+          <h4>What this app does NOT do</h4>
+          <ul class="hiw-cross">
+            <li>Place real trades or connect to a broker</li>
+            <li>Move money in or out of any account</li>
+            <li>Account for taxes, commissions, or slippage</li>
+            <li>Predict the future — Monte Carlo is a "what-if," not a forecast</li>
+            <li>Use real-time intraday quotes (it's end-of-day data)</li>
+            <li>Provide personalized investment advice</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3 class="hiw-section-title">A Worked Example</h3>
+      <div class="hiw-example">
+        <p>Say you enter <code>AAPL, MSFT, GOOGL</code> at equal weights from Jan 2023 to today.</p>
+        <ol>
+          <li><strong>Backtest tab:</strong> "If you had bought $1 of this 3-stock basket on Jan 2 2023 and held it until today, here's the equity curve, and here's what holding the S&amp;P 500 over the same period would have done."</li>
+          <li><strong>Frontier tab:</strong> "Of all the ways you could have weighted these 3 stocks, here's the cloud of possible outcomes. The Max-Sharpe portfolio would have given you the best risk-adjusted return."</li>
+          <li><strong>Monte Carlo tab:</strong> "Assuming the next N years look statistically like the past, here are 1,000 plausible paths your $10k could take."</li>
+          <li><strong>Rebalancing tab:</strong> "If you rebalanced quarterly back to equal-weight versus just letting winners run, here's the gap."</li>
+          <li><strong>Sector tab:</strong> "All 3 of these are mega-cap Tech — your 'diversified' basket is actually 100% Technology."</li>
+          <li><strong>Risk Score tab:</strong> "Composite risk index = 72 / 100 → 'Aggressive.'"</li>
+        </ol>
+        <p class="hiw-example-bottom">No order was sent to a broker, no shares were bought. It's all math on historical numbers.</p>
+      </div>
+
+      <h3 class="hiw-section-title">Tech Stack</h3>
+      <div class="hiw-stack">
+        <div class="hiw-stack-item"><span>Backend</span> Python 3 · Flask · Gunicorn</div>
+        <div class="hiw-stack-item"><span>Data</span> yfinance (Yahoo Finance API)</div>
+        <div class="hiw-stack-item"><span>Math</span> NumPy · pandas · SciPy</div>
+        <div class="hiw-stack-item"><span>Frontend</span> Vanilla JS · Plotly.js · Inter typeface</div>
+        <div class="hiw-stack-item"><span>Hosting</span> Replit Autoscale Deployment</div>
+      </div>
     </section>
 
     <section id="explanations" class="section explanations">

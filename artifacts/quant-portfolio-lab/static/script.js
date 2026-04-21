@@ -58,7 +58,7 @@ function getState() {
     weights,
     start_date: document.getElementById("start").value,
     end_date: document.getElementById("end").value,
-    risk_free_rate: Number(document.getElementById("rf").value),
+    risk_free_rate: (Number(document.getElementById("rf").value) || 0) / 100,
   };
 }
 

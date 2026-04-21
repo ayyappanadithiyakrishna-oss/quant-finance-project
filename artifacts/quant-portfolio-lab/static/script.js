@@ -240,18 +240,20 @@ async function loadUniverse() {
 })();
 
 // State helpers
+function getPortfolioSize() {
+  const v = Number(document.getElementById("portfolio-size").value);
+  return Number.isFinite(v) && v >= 1000 ? v : 100000;
+}
 function getState() {
   const tickers = document.getElementById("tickers").value
     .split(",").map(s => s.trim().toUpperCase()).filter(Boolean);
-  const wsRaw = document.getElementById("weights").value
-    .split(",").map(s => s.trim()).filter(Boolean);
-  const weights = wsRaw.length === tickers.length ? wsRaw.map(Number) : null;
   return {
     tickers,
-    weights,
+    weights: null,
     start_date: document.getElementById("start").value,
     end_date: document.getElementById("end").value,
-    risk_free_rate: (Number(document.getElementById("rf").value) || 0) / 100,
+    risk_free_rate: 0.04,
+    portfolio_size: getPortfolioSize(),
   };
 }
 
@@ -800,7 +802,12 @@ async function runSignals(state) {
 function verdictClass(v) {
   return v === "BUY" ? "v-buy" : v === "SELL" ? "v-sell" : "v-hold";
 }
-function fmtMoney(v) { return "$" + v.toFixed(2); }
+function fmtMoney(v) {
+  if (v == null || !isFinite(v)) return "$0";
+  const abs = Math.abs(v);
+  const decimals = abs >= 1000 ? 0 : 2;
+  return "$" + Number(v).toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
 function fmtPct(v, signed = true) {
   const s = (signed && v > 0 ? "+" : "") + v.toFixed(1) + "%";
   return s;
@@ -822,6 +829,42 @@ function renderSignals(d) {
     <div class="sig-chip sig-sell"><div class="sig-chip-num">${s.sell}</div><div class="sig-chip-lbl">SELL signals</div></div>
     <div class="sig-chip sig-total"><div class="sig-chip-num">${total}</div><div class="sig-chip-lbl">tickers analyzed</div></div>
   `;
+
+  // Quant allocation summary (conviction-weighted across actionable trades)
+  const alloc = d.allocation || {};
+  const allocEl = document.getElementById("quant-allocation-summary");
+  if (allocEl) {
+    if (alloc.n_actionable > 0) {
+      allocEl.innerHTML = `
+        <div class="qalloc-card">
+          <div class="qalloc-head">
+            <span class="qalloc-tag">QUANT MODEL ALLOCATION</span>
+            <span class="qalloc-sub">Conviction-weighted across ${alloc.n_actionable} actionable trade${alloc.n_actionable === 1 ? "" : "s"}</span>
+          </div>
+          <div class="qalloc-grid">
+            <div class="qalloc-cell"><span>Account size</span><b>${fmtMoney(alloc.account_size)}</b></div>
+            <div class="qalloc-cell"><span>Capital deployed</span><b>${fmtMoney(alloc.deployed_notional)}</b><i>${alloc.deployed_pct.toFixed(1)}% of book</i></div>
+            <div class="qalloc-cell qalloc-risk"><span>Total risk at stops</span><b>${fmtMoney(alloc.total_risk_dollars)}</b><i>${alloc.total_risk_pct.toFixed(2)}% of book</i></div>
+            <div class="qalloc-cell"><span>Cash reserve</span><b>${alloc.cash_reserve_pct.toFixed(1)}%</b></div>
+          </div>
+        </div>
+      `;
+    } else {
+      allocEl.innerHTML = `
+        <div class="qalloc-card qalloc-empty">
+          <div class="qalloc-head">
+            <span class="qalloc-tag">QUANT MODEL ALLOCATION</span>
+            <span class="qalloc-sub">No actionable BUY / SELL signals — quant model recommends staying in cash</span>
+          </div>
+          <div class="qalloc-grid">
+            <div class="qalloc-cell"><span>Account size</span><b>${fmtMoney(alloc.account_size || getPortfolioSize())}</b></div>
+            <div class="qalloc-cell"><span>Capital deployed</span><b>$0</b><i>0.0% of book</i></div>
+            <div class="qalloc-cell"><span>Cash reserve</span><b>100.0%</b></div>
+          </div>
+        </div>
+      `;
+    }
+  }
 
   // Top trade idea cards (top 3 by abs score, but show all if <=4)
   const cards = d.ranked.slice(0, Math.min(4, d.ranked.length));
@@ -872,9 +915,9 @@ function renderSignals(d) {
             <div class="lvl lvl-target"><span>Target 2</span><b>${fmtMoney(lev.target_2)}</b><i>${lev.risk_reward_t2.toFixed(2)}× R</i></div>
           </div>
           <div class="sig-sizing">
-            <span>Position sizing (1% of $100k account)</span>
+            <span>Quant position size · 1% risk on ${fmtMoney(getPortfolioSize())}</span>
             <b>${lev.shares_1pct_risk.toLocaleString()} shares</b>
-            <span class="sig-sizing-sub">≈ ${fmtMoney(lev.notional)} notional · ${lev.notional_pct.toFixed(1)}% of capital</span>
+            <span class="sig-sizing-sub">≈ ${fmtMoney(lev.notional)} notional · ${lev.notional_pct.toFixed(1)}% of capital · ${fmtMoney(lev.risk_dollars)} at risk</span>
           </div>
         </div>
         <div class="sig-forecast">

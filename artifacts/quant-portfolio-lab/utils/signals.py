@@ -292,6 +292,8 @@ def trade_levels(
         "risk_reward": float(rr_t1),
         "risk_reward_t2": float(rr_t2),
         "shares_1pct_risk": int(shares),
+        "risk_dollars": float(risk_dollars),
+        "account_size": float(account_size),
         "notional": float(notional),
         "notional_pct": float(notional_pct),
         "horizon_days": int(base_days),
@@ -305,7 +307,7 @@ def trade_levels(
 
 # ----- Per-ticker analysis -----
 
-def analyze_ticker(prices: pd.Series, returns: pd.Series) -> dict:
+def analyze_ticker(prices: pd.Series, returns: pd.Series, account_size: float = 100_000.0) -> dict:
     """Run the full signal stack for one ticker."""
     last_price = float(prices.iloc[-1])
     rsi_v = float(rsi(prices).iloc[-1])
@@ -322,7 +324,7 @@ def analyze_ticker(prices: pd.Series, returns: pd.Series) -> dict:
         rsi_v, z_v, mom_20, mom_60, ma["state"], ma["spread_pct"] or 0, boll
     )
     forecast = forecast_distribution(returns, horizon_days=21, current_price=last_price)
-    levels = trade_levels(prices, atr_v, verdict, score, vol["regime"])
+    levels = trade_levels(prices, atr_v, verdict, score, vol["regime"], account_size=account_size)
 
     return {
         "price": last_price,
@@ -405,10 +407,11 @@ def trade_signals(state: dict) -> dict:
     prices: pd.DataFrame = state["prices"]
     returns: pd.DataFrame = state["returns"]
     tickers = list(prices.columns)
+    account_size = float(state.get("portfolio_size", 100_000.0) or 100_000.0)
 
     per_ticker: dict[str, dict] = {}
     for t in tickers:
-        per_ticker[t] = analyze_ticker(prices[t], returns[t])
+        per_ticker[t] = analyze_ticker(prices[t], returns[t], account_size=account_size)
 
     # Rank by absolute score → top opportunities
     ranked = sorted(
@@ -425,6 +428,27 @@ def trade_signals(state: dict) -> dict:
     sells = sum(1 for v in per_ticker.values() if v["verdict"] == "SELL")
     holds = sum(1 for v in per_ticker.values() if v["verdict"] == "HOLD")
 
+    # Conviction-weighted suggested allocation across actionable trades (BUY/SELL only)
+    conv_weight = {"high": 3.0, "medium": 2.0, "low": 1.0}
+    actionable = [(t, v) for t, v in per_ticker.items() if v["verdict"] in ("BUY", "SELL")]
+    alloc_total_notional = 0.0
+    alloc_total_risk = 0.0
+    for t, v in actionable:
+        w = conv_weight.get(v.get("levels", {}).get("conviction", "low"), 1.0)
+        notional = v.get("levels", {}).get("notional", 0.0) * w
+        risk = v.get("levels", {}).get("risk_dollars", 0.0) * w
+        alloc_total_notional += notional
+        alloc_total_risk += risk
+    allocation = {
+        "account_size": account_size,
+        "n_actionable": len(actionable),
+        "deployed_notional": min(alloc_total_notional, account_size),
+        "deployed_pct": min(alloc_total_notional / account_size, 1.0) * 100 if account_size > 0 else 0,
+        "total_risk_dollars": alloc_total_risk,
+        "total_risk_pct": (alloc_total_risk / account_size) * 100 if account_size > 0 else 0,
+        "cash_reserve_pct": max(0.0, (1.0 - alloc_total_notional / account_size) * 100) if account_size > 0 else 100,
+    }
+
     return {
         "tickers": tickers,
         "as_of": prices.index[-1].strftime("%Y-%m-%d"),
@@ -432,4 +456,6 @@ def trade_signals(state: dict) -> dict:
         "ranked": top,
         "summary": {"buy": buys, "sell": sells, "hold": holds},
         "pair": pair,
+        "allocation": allocation,
+        "account_size": account_size,
     }

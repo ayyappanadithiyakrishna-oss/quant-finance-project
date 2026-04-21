@@ -55,10 +55,6 @@
           </div>
           <input id="tickers" type="hidden" value="AAPL,MSFT,GOOGL,AMZN,JPM" />
         </div>
-        <div class="field field-weights">
-          <label>Weights <span class="hint">optional</span></label>
-          <input id="weights" type="text" placeholder="auto-equal if blank" autocomplete="off" spellcheck="false" />
-        </div>
         <div class="field field-date">
           <label>Start</label>
           <input id="start" type="date" />
@@ -67,11 +63,11 @@
           <label>End</label>
           <input id="end" type="date" />
         </div>
-        <div class="field field-rf">
-          <label>Risk-free <span class="hint">annual</span></label>
+        <div class="field field-portfolio">
+          <label>Portfolio Size <span class="hint">USD</span></label>
           <div class="input-with-suffix">
-            <input id="rf" type="number" step="0.25" min="0" max="20" value="4" />
-            <span class="suffix">%</span>
+            <span class="prefix">$</span>
+            <input id="portfolio-size" type="number" step="1000" min="1000" value="100000" />
           </div>
         </div>
         <div class="field field-action">
@@ -95,13 +91,20 @@
 
       <div id="signals-summary" class="signals-summary"></div>
 
-      <h3 class="hiw-section-title">Top Trade Ideas</h3>
+      <h3 class="hiw-section-title">Quant Top Trade Ideas</h3>
+      <p class="quant-subtitle">
+        Trades ranked, sized, and structured entirely by the quant models — RSI mean-reversion,
+        Bollinger Z-score, dual-timeframe momentum, 50/200 MA crossover, ATR risk units, and
+        21-day GBM forecast. Position sizing scales each trade to your portfolio using a
+        fixed-fractional risk model (1% risk per trade) and the model's conviction tier.
+      </p>
+      <div id="quant-allocation-summary" class="quant-allocation-summary"></div>
       <div id="signals-cards" class="signals-cards"></div>
 
-      <h3 class="hiw-section-title">Full Signal Matrix</h3>
+      <h3 class="hiw-section-title">Quant Signal Matrix</h3>
       <div id="signals-table" class="signals-table-wrap"></div>
 
-      <h3 class="hiw-section-title">Pairs Trading Scan</h3>
+      <h3 class="hiw-section-title">Quant Pairs Trading Scan</h3>
       <div id="signals-pair" class="pair-block"></div>
 
       <div class="insight" id="signals-insight"></div>

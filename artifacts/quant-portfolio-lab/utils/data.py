@@ -112,12 +112,17 @@ def validate_inputs(payload: dict) -> dict:
     if not 0.0 <= risk_free <= 0.2:
         raise ValueError("risk_free_rate must be between 0.0 and 0.2.")
 
+    portfolio_size = float(payload.get("portfolio_size", 100_000.0) or 100_000.0)
+    if not 1_000.0 <= portfolio_size <= 1_000_000_000.0:
+        raise ValueError("portfolio_size must be between $1,000 and $1,000,000,000.")
+
     return {
         "tickers": tickers,
         "weights": weights.tolist(),
         "start_date": start,
         "end_date": end,
         "risk_free_rate": risk_free,
+        "portfolio_size": portfolio_size,
     }
 
 
@@ -160,6 +165,7 @@ def load_portfolio(cleaned: dict) -> dict:
         "risk_free_rate": cleaned["risk_free_rate"],
         "start_date": cleaned["start_date"],
         "end_date": cleaned["end_date"],
+        "portfolio_size": cleaned.get("portfolio_size", 100_000.0),
     }
 
 

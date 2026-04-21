@@ -51,10 +51,19 @@ const MAX_TICKERS = 10;
 const selectedTickers = (document.getElementById("tickers").value || "")
   .split(",").map(s => s.trim().toUpperCase()).filter(Boolean);
 
-function logoUrl(domain) {
-  return domain
-    ? `https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://${domain}&size=128`
-    : "";
+// Special-case overrides: tickers whose logo is served from our own /static directory
+const LOCAL_LOGOS = {
+  SPY: "/static/images/spy.png",
+  QQQ: "/static/images/qqq.png",
+};
+function logoUrl(domain, symbol) {
+  if (symbol && LOCAL_LOGOS[symbol]) return LOCAL_LOGOS[symbol];
+  if (!domain) return "";
+  // Google's faviconV2 endpoint at 256px — highest quality cached icon Google has
+  return `https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://${domain}&size=256`;
+}
+function hasLogo(meta) {
+  return !!(meta && (LOCAL_LOGOS[meta.symbol] || meta.domain));
 }
 function tickerInitial(sym) { return (sym || "?").slice(0, 1); }
 // Deterministic pleasant color per ticker for letter-tile fallbacks
@@ -76,13 +85,13 @@ function tileStyle(sym) {
 
 function chipHtml(meta) {
   const sym = meta.symbol;
-  const dom = meta.domain || "";
   const initial = tickerInitial(sym);
+  const url = logoUrl(meta.domain || "", sym);
   return `
     <span class="t-chip" data-sym="${sym}" title="${meta.name || sym} · ${meta.exchange || ""}">
       <span class="t-chip-logo" style="${tileStyle(sym)}">
         <span class="t-chip-fallback">${initial}</span>
-        ${dom ? `<img src="${logoUrl(dom)}" alt="" onload="this.previousElementSibling.style.display='none';this.parentElement.classList.add('has-logo');" onerror="this.style.display='none'">` : ""}
+        ${url ? `<img src="${url}" alt="" onload="this.previousElementSibling.style.display='none';this.parentElement.classList.add('has-logo');" onerror="this.style.display='none'">` : ""}
       </span>
       <span class="t-chip-sym">${sym}</span>
       <button class="t-chip-x" data-sym="${sym}" aria-label="Remove ${sym}">×</button>
@@ -114,7 +123,11 @@ function renderChips() {
 
 function renderDropdown(query) {
   const dd = document.getElementById("ticker-dropdown");
-  if (!cache.universe) { dd.classList.add("hidden"); return; }
+  if (!cache.universe) {
+    dd.innerHTML = `<div class="dd-empty">Loading 10,734-ticker universe…</div>`;
+    dd.classList.remove("hidden");
+    return;
+  }
   const q = (query || "").trim().toUpperCase();
   let results = cache.universe;
   if (q) {
@@ -141,7 +154,7 @@ function renderDropdown(query) {
       <div class="dd-row ${picked ? "dd-picked" : ""}" data-sym="${u.symbol}">
         <span class="dd-logo" style="${tileStyle(u.symbol)}">
           <span class="dd-fallback">${initial}</span>
-          ${u.domain ? `<img src="${logoUrl(u.domain)}" alt="" onload="this.previousElementSibling.style.display='none';this.parentElement.classList.add('has-logo');" onerror="this.style.display='none'">` : ""}
+          ${hasLogo(u) ? `<img src="${logoUrl(u.domain, u.symbol)}" alt="" onload="this.previousElementSibling.style.display='none';this.parentElement.classList.add('has-logo');" onerror="this.style.display='none'">` : ""}
         </span>
         <div class="dd-info">
           <div class="dd-row-top">
@@ -202,10 +215,16 @@ async function loadUniverse() {
       renderChips();
     } else if (e.key === "Enter") {
       const q = input.value.trim().toUpperCase();
-      if (q && cache.universe) {
-        const found = cache.universe.find(u => u.symbol === q) || cache.universe.find(u => u.symbol.startsWith(q));
-        if (found && !selectedTickers.includes(found.symbol) && selectedTickers.length < MAX_TICKERS) {
-          selectedTickers.push(found.symbol);
+      if (q) {
+        let symToAdd = null;
+        if (cache.universe) {
+          const found = cache.universe.find(u => u.symbol === q) || cache.universe.find(u => u.symbol.startsWith(q));
+          if (found) symToAdd = found.symbol;
+        }
+        // Graceful fallback: even if universe hasn't loaded, accept the typed symbol
+        if (!symToAdd && /^[A-Z][A-Z0-9.\-]{0,5}$/.test(q)) symToAdd = q;
+        if (symToAdd && !selectedTickers.includes(symToAdd) && selectedTickers.length < MAX_TICKERS) {
+          selectedTickers.push(symToAdd);
           renderChips();
           input.value = "";
           renderDropdown("");
@@ -811,7 +830,7 @@ function renderSignals(d) {
     const fc = t.forecast;
     const meter = Math.max(2, Math.abs(t.score));
     const m = (cache.meta && cache.meta[t.ticker]) || { name: t.ticker, exchange: "", domain: "" };
-    const logo = m.domain ? `<img src="${logoUrl(m.domain)}" alt="" onload="this.previousElementSibling.style.display='none';this.parentElement.classList.add('has-logo');" onerror="this.style.display='none'">` : "";
+    const logo = hasLogo({ ...m, symbol: t.ticker }) ? `<img src="${logoUrl(m.domain, t.ticker)}" alt="" onload="this.previousElementSibling.style.display='none';this.parentElement.classList.add('has-logo');" onerror="this.style.display='none'">` : "";
     return `
       <div class="sig-card ${verdictClass(t.verdict)}">
         <div class="sig-card-head">
@@ -857,7 +876,7 @@ function renderSignals(d) {
   // Full matrix table
   const rows = d.ranked.map(t => {
     const m = (cache.meta && cache.meta[t.ticker]) || {};
-    const logo = m.domain ? `<img src="${logoUrl(m.domain)}" class="t-row-logo" onload="this.previousElementSibling.style.display='none';this.parentElement.classList.add('has-logo');" onerror="this.style.display='none'">` : "";
+    const logo = hasLogo({ ...m, symbol: t.ticker }) ? `<img src="${logoUrl(m.domain, t.ticker)}" class="t-row-logo" onload="this.previousElementSibling.style.display='none';this.parentElement.classList.add('has-logo');" onerror="this.style.display='none'">` : "";
     return `
     <tr class="${verdictClass(t.verdict)}-row">
       <td class="t-tk"><span class="t-row-logo-wrap" style="${tileStyle(t.ticker)}"><span class="t-row-logo-fb">${tickerInitial(t.ticker)}</span>${logo}</span>${t.ticker}</td>

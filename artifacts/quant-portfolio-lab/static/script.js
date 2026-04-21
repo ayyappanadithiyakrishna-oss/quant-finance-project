@@ -859,14 +859,26 @@ function renderSignals(d) {
         <div class="sig-rationale">
           ${t.rationale.length ? t.rationale.map(r => `<div>• ${r}</div>`).join("") : "<div class='muted'>• Mixed/neutral signals — no edge detected</div>"}
         </div>
-        <div class="sig-levels">
-          <div class="lvl"><span>Entry zone</span><b>${fmtMoney(lev.entry_lo)} – ${fmtMoney(lev.entry_hi)}</b></div>
-          <div class="lvl lvl-stop"><span>Stop loss</span><b>${fmtMoney(lev.stop_loss)}</b></div>
-          <div class="lvl lvl-target"><span>Target</span><b>${fmtMoney(lev.target)}</b></div>
-          <div class="lvl"><span>R / R</span><b>${lev.risk_reward.toFixed(2)}×</b></div>
+        <div class="sig-trade-plan">
+          <div class="sig-trade-head">
+            <span class="sig-direction sig-dir-${lev.direction}">${(lev.direction || "").toUpperCase()}</span>
+            <span class="sig-conviction sig-conv-${lev.conviction}">${(lev.conviction || "low")} conviction</span>
+            <span class="sig-horizon">${lev.horizon_days}-day horizon</span>
+          </div>
+          <div class="sig-levels">
+            <div class="lvl"><span>Entry zone</span><b>${fmtMoney(lev.entry_lo)} – ${fmtMoney(lev.entry_hi)}</b></div>
+            <div class="lvl lvl-stop"><span>Stop loss</span><b>${fmtMoney(lev.stop_loss)}</b><i>−${fmtMoney(lev.risk_per_share)}/sh</i></div>
+            <div class="lvl lvl-target"><span>Target 1</span><b>${fmtMoney(lev.target_1)}</b><i>${lev.risk_reward.toFixed(2)}× R</i></div>
+            <div class="lvl lvl-target"><span>Target 2</span><b>${fmtMoney(lev.target_2)}</b><i>${lev.risk_reward_t2.toFixed(2)}× R</i></div>
+          </div>
+          <div class="sig-sizing">
+            <span>Position sizing (1% of $100k account)</span>
+            <b>${lev.shares_1pct_risk.toLocaleString()} shares</b>
+            <span class="sig-sizing-sub">≈ ${fmtMoney(lev.notional)} notional · ${lev.notional_pct.toFixed(1)}% of capital</span>
+          </div>
         </div>
         <div class="sig-forecast">
-          21-day forecast: <b class="${pctClass(fc.expected_return_pct)}">${fmtPct(fc.expected_return_pct)}</b>
+          21-day GBM forecast: <b class="${pctClass(fc.expected_return_pct)}">${fmtPct(fc.expected_return_pct)}</b>
           &nbsp;·&nbsp; 90% range <b>${fmtMoney(fc.p5)} → ${fmtMoney(fc.p95)}</b>
         </div>
       </div>

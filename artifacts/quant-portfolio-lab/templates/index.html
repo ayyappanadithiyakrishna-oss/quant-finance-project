@@ -474,6 +474,66 @@
     </section>
 
     <div id="error-toast" class="toast hidden"></div>
+
+    <footer class="app-footer">
+      <div class="footer-disclaimer">
+        <strong>DISCLAIMER — NOT FOR FINANCIAL ADVICE.</strong>
+        Quant Portfolio Lab is an educational and research tool. Nothing on this site
+        constitutes investment, trading, tax, or financial advice. All signals, levels,
+        forecasts, and position-sizing suggestions are model outputs derived from public
+        historical price data and may be incorrect, delayed, or incomplete. Past performance
+        does not guarantee future results. Trade at your own risk.
+      </div>
+      <div class="footer-links">
+        <a href="#" onclick="document.getElementById('legal-tos').classList.remove('hidden');return false;">Terms of Service</a>
+        <span class="footer-sep">·</span>
+        <a href="#" onclick="document.getElementById('legal-privacy').classList.remove('hidden');return false;">Privacy Policy</a>
+        <span class="footer-sep">·</span>
+        <a href="#" onclick="document.getElementById('legal-disclaimer').classList.remove('hidden');return false;">Full Disclaimer</a>
+      </div>
+      <div class="footer-credit">
+        © 2026 Quant Portfolio Lab · Built by Adithiyakrishna Ayyappan · Market data via Yahoo Finance
+      </div>
+    </footer>
+
+    <div id="legal-tos" class="legal-modal hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+      <div class="legal-card">
+        <button class="legal-close" onclick="this.parentElement.parentElement.classList.add('hidden')">×</button>
+        <h2>Terms of Service</h2>
+        <p>By accessing Quant Portfolio Lab (the "Service"), you agree to these Terms.</p>
+        <p><b>1. Educational use only.</b> The Service is provided strictly for educational, research, and informational purposes. It is not a brokerage, investment adviser, or financial planner.</p>
+        <p><b>2. No advice.</b> Nothing on the Service constitutes investment, trading, legal, tax, or financial advice. All outputs are model-generated and may contain errors.</p>
+        <p><b>3. No warranty.</b> The Service is provided "as is" without warranties of any kind. We do not guarantee accuracy, completeness, timeliness, or fitness for any particular purpose.</p>
+        <p><b>4. No liability.</b> To the maximum extent permitted by law, the operator shall not be liable for any loss or damages, including direct, indirect, incidental, consequential, or special damages, arising from use of the Service.</p>
+        <p><b>5. Data sources.</b> Market data is sourced from third-party providers (Yahoo Finance) and may be delayed, inaccurate, or unavailable.</p>
+        <p><b>6. Your decisions.</b> You are solely responsible for your investment decisions. Consult a licensed financial professional before acting on any information.</p>
+      </div>
+    </div>
+
+    <div id="legal-privacy" class="legal-modal hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+      <div class="legal-card">
+        <button class="legal-close" onclick="this.parentElement.parentElement.classList.add('hidden')">×</button>
+        <h2>Privacy Policy</h2>
+        <p><b>What we collect.</b> Quant Portfolio Lab does not require accounts or store personal information. Ticker queries, date ranges, and weights you submit are processed in-memory to compute analytics and are not persisted to any database.</p>
+        <p><b>Logging.</b> Standard server logs (IP address, request path, timestamp, user agent) may be retained transiently for operational and security purposes.</p>
+        <p><b>Third parties.</b> Market data is fetched from Yahoo Finance. Company logos are loaded from Google's public favicon service. These providers may log requests per their own policies.</p>
+        <p><b>Cookies.</b> The Service does not set tracking or advertising cookies.</p>
+        <p><b>No sale of data.</b> We do not sell, rent, or share user data with third parties.</p>
+      </div>
+    </div>
+
+    <div id="legal-disclaimer" class="legal-modal hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+      <div class="legal-card">
+        <button class="legal-close" onclick="this.parentElement.parentElement.classList.add('hidden')">×</button>
+        <h2>Full Disclaimer — NOT FOR FINANCIAL ADVICE</h2>
+        <p><b>Not financial advice.</b> The information, signals, trade ideas, entry/stop/target levels, position-sizing recommendations, forecasts, and any other content presented by Quant Portfolio Lab are for educational and research purposes only. They do not constitute investment, trading, tax, accounting, legal, or financial advice and should not be treated as such.</p>
+        <p><b>Model risk.</b> All signals are derived from quantitative models applied to historical price data. Models may be misspecified, overfit, or rely on patterns that no longer hold. Real-world execution involves slippage, commissions, taxes, gaps, halts, and liquidity constraints not reflected in the model output.</p>
+        <p><b>Past performance.</b> Past performance is not indicative of future results. Backtests assume perfect fills and may overstate realistic returns.</p>
+        <p><b>Risk of loss.</b> Trading securities involves substantial risk of loss, including loss of principal. Leverage and short selling can compound losses beyond your initial investment.</p>
+        <p><b>Your responsibility.</b> You are solely responsible for any decisions to buy, sell, or hold any security. You should conduct your own due diligence and consult a licensed financial professional before making investment decisions.</p>
+        <p><b>No fiduciary relationship.</b> Use of this Service does not create any adviser-client, broker-customer, or fiduciary relationship between you and the operator.</p>
+      </div>
+    </div>
   </main>
 
   <script src="{{ url_for('static', filename='script.js') }}"></script>

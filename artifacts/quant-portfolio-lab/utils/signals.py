@@ -186,33 +186,120 @@ def forecast_distribution(returns: pd.Series, horizon_days: int = 21, current_pr
     }
 
 
-def trade_levels(price: float, atr_v: float, verdict: str) -> dict:
-    """Suggest entry, stop-loss, and target based on ATR — standard quant risk sizing."""
-    if verdict == "BUY":
-        entry_lo = price - 0.5 * atr_v
-        entry_hi = price + 0.25 * atr_v
-        stop = price - 2.0 * atr_v
-        target = price + 3.0 * atr_v
-    elif verdict == "SELL":
-        entry_lo = price - 0.25 * atr_v
-        entry_hi = price + 0.5 * atr_v
-        stop = price + 2.0 * atr_v
-        target = price - 3.0 * atr_v
-    else:
-        entry_lo = price - 0.5 * atr_v
-        entry_hi = price + 0.5 * atr_v
-        stop = price - 1.5 * atr_v
-        target = price + 1.5 * atr_v
+def trade_levels(
+    prices: pd.Series,
+    atr_v: float,
+    verdict: str,
+    score: float,
+    vol_regime_state: str,
+    account_size: float = 100_000.0,
+    risk_per_trade_pct: float = 1.0,
+) -> dict:
+    """
+    Realistic swing-trade levels grounded in price structure, not just ATR multiples.
 
-    risk = abs(price - stop)
-    reward = abs(target - price)
-    rr = reward / risk if risk > 0 else 0
+    Methodology (matches how systematic and discretionary equity desks size trades):
+    - Stop loss is anchored to the recent 20-day swing high/low with an ATR buffer to
+      avoid noise stops, capped so the per-share risk does not exceed 2.5 ATR.
+    - Target 1 (T1) is the nearest meaningful structural level — the prior 20-day
+      extreme in the trade direction — or a 2.5x ATR projection, whichever offers
+      better risk/reward.
+    - Target 2 (T2) is the 60-day extreme, providing a runner extension for trend trades.
+    - Position size is calculated from a fixed-risk model: shares = (account * risk_pct)
+      / per-share dollar risk. This is the standard Van Tharp / CMT approach.
+    - Time horizon scales with signal conviction and volatility regime.
+    """
+    price = float(prices.iloc[-1])
+    swing_high_20 = float(prices.tail(20).max())
+    swing_low_20 = float(prices.tail(20).min())
+    swing_high_60 = float(prices.tail(60).max()) if len(prices) >= 60 else swing_high_20
+    swing_low_60 = float(prices.tail(60).min()) if len(prices) >= 60 else swing_low_20
+
+    if verdict == "BUY":
+        # Entry: between the 20-day SMA pullback and current price (buy on dips into the band)
+        sma20 = float(prices.tail(20).mean())
+        entry_lo = max(sma20, price - 0.75 * atr_v)
+        entry_hi = price + 0.10 * atr_v
+        # Stop: below 20-day swing low minus 0.5 ATR buffer, but no wider than 2.5 ATR
+        structural_stop = swing_low_20 - 0.5 * atr_v
+        max_risk = price - 2.5 * atr_v
+        stop = max(structural_stop, max_risk)
+        # Target 1: nearest resistance (20d high), pushed out to at least 2x risk
+        risk_per_share = price - stop
+        min_t1 = price + 2.0 * risk_per_share
+        t1 = max(swing_high_20, min_t1)
+        # Target 2: 60d high or +1 ATR extension above T1
+        t2 = max(swing_high_60, t1 + atr_v)
+        direction = "long"
+    elif verdict == "SELL":
+        sma20 = float(prices.tail(20).mean())
+        entry_lo = price - 0.10 * atr_v
+        entry_hi = min(sma20, price + 0.75 * atr_v)
+        structural_stop = swing_high_20 + 0.5 * atr_v
+        max_risk = price + 2.5 * atr_v
+        stop = min(structural_stop, max_risk)
+        risk_per_share = stop - price
+        min_t1 = price - 2.0 * risk_per_share
+        t1 = min(swing_low_20, min_t1)
+        t2 = min(swing_low_60, t1 - atr_v)
+        direction = "short"
+    else:  # HOLD — tight bracket around price; no actionable trade
+        entry_lo = price - 0.25 * atr_v
+        entry_hi = price + 0.25 * atr_v
+        stop = price - 1.5 * atr_v
+        t1 = price + 1.5 * atr_v
+        t2 = price + 2.5 * atr_v
+        risk_per_share = price - stop
+        direction = "neutral"
+
+    risk = abs(risk_per_share)
+    reward_t1 = abs(t1 - price)
+    reward_t2 = abs(t2 - price)
+    rr_t1 = reward_t1 / risk if risk > 1e-9 else 0.0
+    rr_t2 = reward_t2 / risk if risk > 1e-9 else 0.0
+
+    # Fixed-fractional position sizing (standard 1% account risk model)
+    risk_dollars = account_size * (risk_per_trade_pct / 100.0)
+    shares = int(risk_dollars / risk) if risk > 1e-9 else 0
+    notional = shares * price
+    notional_pct = (notional / account_size) * 100 if account_size > 0 else 0
+
+    # Time horizon: stronger signals justify longer holds; high-vol shrinks horizon
+    base_days = 10 if abs(score) < 30 else (20 if abs(score) < 60 else 35)
+    if vol_regime_state == "elevated":
+        base_days = max(5, int(base_days * 0.6))
+    elif vol_regime_state == "subdued":
+        base_days = int(base_days * 1.3)
+
+    # Conviction tier from composite score
+    abs_s = abs(score)
+    if abs_s >= 60:
+        conviction = "high"
+    elif abs_s >= 30:
+        conviction = "medium"
+    else:
+        conviction = "low"
+
     return {
+        "direction": direction,
         "entry_lo": float(entry_lo),
         "entry_hi": float(entry_hi),
         "stop_loss": float(stop),
-        "target": float(target),
-        "risk_reward": float(rr),
+        "target": float(t1),  # back-compat alias
+        "target_1": float(t1),
+        "target_2": float(t2),
+        "risk_per_share": float(risk),
+        "risk_reward": float(rr_t1),
+        "risk_reward_t2": float(rr_t2),
+        "shares_1pct_risk": int(shares),
+        "notional": float(notional),
+        "notional_pct": float(notional_pct),
+        "horizon_days": int(base_days),
+        "conviction": conviction,
+        "swing_high_20": swing_high_20,
+        "swing_low_20": swing_low_20,
+        "swing_high_60": swing_high_60,
+        "swing_low_60": swing_low_60,
     }
 
 
@@ -235,7 +322,7 @@ def analyze_ticker(prices: pd.Series, returns: pd.Series) -> dict:
         rsi_v, z_v, mom_20, mom_60, ma["state"], ma["spread_pct"] or 0, boll
     )
     forecast = forecast_distribution(returns, horizon_days=21, current_price=last_price)
-    levels = trade_levels(last_price, atr_v, verdict)
+    levels = trade_levels(prices, atr_v, verdict, score, vol["regime"])
 
     return {
         "price": last_price,

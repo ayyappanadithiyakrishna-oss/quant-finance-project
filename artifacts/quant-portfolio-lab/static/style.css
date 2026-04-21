@@ -1009,3 +1009,103 @@ tr:hover td { background: rgba(76,194,255,0.04); }
   background: #10b981; margin-right: 5px; box-shadow: 0 0 6px #10b981;
   animation: pulse 1.6s ease-in-out infinite;
 }
+
+/* ==================== Trade plan card ==================== */
+.sig-trade-plan {
+  margin-top: 12px; padding: 12px; border-radius: 8px;
+  background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06);
+}
+.sig-trade-head {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  margin-bottom: 10px; padding-bottom: 10px;
+  border-bottom: 1px dashed rgba(255,255,255,0.07);
+}
+.sig-direction {
+  font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 4px;
+  letter-spacing: 0.1em;
+}
+.sig-dir-long { background: rgba(16,185,129,0.18); color: #10b981; }
+.sig-dir-short { background: rgba(239,68,68,0.18); color: #ef4444; }
+.sig-dir-neutral { background: rgba(148,163,184,0.18); color: #94a3b8; }
+.sig-conviction {
+  font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px;
+  letter-spacing: 0.05em; text-transform: uppercase;
+}
+.sig-conv-high { background: rgba(91,141,239,0.18); color: #5b8def; }
+.sig-conv-medium { background: rgba(245,158,11,0.15); color: #f59e0b; }
+.sig-conv-low { background: rgba(148,163,184,0.12); color: #94a3b8; }
+.sig-horizon {
+  margin-left: auto; font-size: 10px; color: var(--muted);
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+.lvl i {
+  display: block; font-size: 9.5px; color: var(--muted);
+  font-style: normal; margin-top: 2px; letter-spacing: 0.04em;
+}
+.sig-sizing {
+  margin-top: 10px; padding: 10px;
+  background: rgba(91,141,239,0.06); border: 1px solid rgba(91,141,239,0.18);
+  border-radius: 6px;
+  display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center;
+}
+.sig-sizing > span:first-child { font-size: 10px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+.sig-sizing > b { font-size: 16px; font-weight: 700; color: #5b8def; font-variant-numeric: tabular-nums; }
+.sig-sizing-sub { grid-column: 1 / -1; font-size: 11px; color: var(--muted); }
+
+/* ==================== Footer & legal ==================== */
+.app-footer {
+  margin-top: 48px; padding: 24px 28px 32px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  background: rgba(0,0,0,0.20);
+}
+.footer-disclaimer {
+  font-size: 11px; color: var(--muted); line-height: 1.6;
+  max-width: 980px; margin: 0 auto 16px;
+}
+.footer-disclaimer strong {
+  color: #f59e0b; letter-spacing: 0.08em; font-weight: 800; margin-right: 6px;
+}
+.footer-links {
+  text-align: center; margin-bottom: 12px;
+  font-size: 12px;
+}
+.footer-links a {
+  color: var(--text); text-decoration: none; transition: color 0.15s;
+  font-weight: 600;
+}
+.footer-links a:hover { color: #5b8def; }
+.footer-sep { color: var(--muted); margin: 0 10px; }
+.footer-credit {
+  text-align: center; font-size: 10.5px; color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.legal-modal {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.legal-card {
+  position: relative;
+  max-width: 720px; max-height: 80vh; overflow-y: auto;
+  background: #0f1320; border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 12px; padding: 32px 36px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+}
+.legal-card h2 {
+  margin: 0 0 16px; font-size: 18px; font-weight: 700;
+  color: var(--text); letter-spacing: 0.02em;
+}
+.legal-card p {
+  margin: 0 0 12px; font-size: 13px; line-height: 1.65;
+  color: var(--muted);
+}
+.legal-card p b { color: var(--text); font-weight: 600; }
+.legal-close {
+  position: absolute; top: 12px; right: 14px;
+  width: 28px; height: 28px; border: none; border-radius: 6px;
+  background: rgba(255,255,255,0.06); color: var(--muted);
+  font-size: 18px; cursor: pointer; line-height: 1;
+}
+.legal-close:hover { background: rgba(239,68,68,0.18); color: #ef4444; }

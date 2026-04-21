@@ -1,17 +1,30 @@
-# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
 
-# compiled output
-dist
-tmp
-out-tsc
+# Node / pnpm
+node_modules/
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# TypeScript build output
 *.tsbuildinfo
-.expo
-.expo-shared
+out-tsc/
+tmp/
 
-# dependencies
-node_modules
-
-# IDEs and editors
+# IDE
 /.idea
 .project
 .classpath
@@ -19,31 +32,28 @@ node_modules
 *.launch
 .settings/
 *.sublime-workspace
-
-# IDE - VSCode
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+.cursor/
 
-# misc
-/.sass-cache
-/connect.lock
-/coverage
-/libpeerconnection.log
-npm-debug.log
-yarn-error.log
-testem.log
-/typings
-
-# System Files
+# System
 .DS_Store
 Thumbs.db
 
-.cursor/rules/nx-rules.mdc
-.github/instructions/nx.instructions.md
+# Misc
+/.sass-cache
+/coverage
+/typings
 
-# Replit
+# Replit-specific (not needed on GitHub)
 .cache/
 .local/
+.upm/
+.pythonlibs/
+.agents/
+attached_assets/
+replit.md
+uv.lock

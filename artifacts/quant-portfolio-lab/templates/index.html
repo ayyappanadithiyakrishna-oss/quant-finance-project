@@ -38,8 +38,8 @@
       <a href="#explanations" class="nav-link" data-section="explanations"><span class="nav-icon">✦</span>Explanations</a>
     </nav>
     <div class="sidebar-footer">
-      <div class="footer-line">Institutional-grade analytics</div>
-      <div class="footer-sub">without a Bloomberg terminal.</div>
+      <div class="footer-line">Made by</div>
+      <div class="footer-sub">Adithiyakrishna Ayyappan</div>
     </div>
   </aside>
 
@@ -244,10 +244,10 @@
       <div class="hiw-callout">
         <div class="hiw-callout-icon">i</div>
         <div>
-          <strong>Quant Portfolio Lab is a research &amp; education tool — not a brokerage.</strong>
-          It does <em>not</em> place real trades, connect to your broker, or move any money. Everything you see is computed from
-          historical price data using standard quantitative-finance math. Think of it as a sandbox for testing portfolio ideas
-          before you ever risk a dollar in a real account.
+          <strong>Quant Portfolio Lab is a quantitative research workstation.</strong>
+          It produces <em>forward-looking trade signals</em> (RSI, momentum, mean-reversion, MA crossovers, pairs trading) alongside
+          <em>portfolio-level analytics</em> (Sharpe, Markowitz frontier, Monte Carlo, drawdown, sector exposure).
+          You enter the trade ideas yourself — the lab does the math; the broker does the execution.
         </div>
       </div>
 
@@ -264,7 +264,7 @@
           <div class="hiw-step-num">2</div>
           <div class="hiw-step-body">
             <h4>The browser sends your request to the Flask server</h4>
-            <p>Each tab (Overview, Frontier, Backtest, …) hits a separate API endpoint — <code>/analytics</code>, <code>/optimize</code>, <code>/backtest</code>, <code>/simulate</code>, <code>/rebalance</code>, <code>/sector</code>, <code>/riskscore</code> — in parallel.</p>
+            <p>Each module hits a separate API endpoint — <code>/signals</code>, <code>/analytics</code>, <code>/optimize</code>, <code>/backtest</code>, <code>/simulate</code>, <code>/rebalance</code>, <code>/sector</code>, <code>/riskscore</code> — in parallel.</p>
           </div>
         </li>
         <li>
@@ -285,7 +285,7 @@
           <div class="hiw-step-num">5</div>
           <div class="hiw-step-body">
             <h4>Each module runs its own model</h4>
-            <p>Pure NumPy / SciPy. The Frontier samples 5,000 random weights. Monte Carlo Cholesky-decomposes the covariance and simulates 1,000 GBM paths. Rebalancing replays history with periodic weight resets. Sector pulls each ticker's GICS classification.</p>
+            <p>Pure NumPy / SciPy. <strong>Trade Signals</strong> compute Wilder-RSI, 20d Z-score, Bollinger position, 1M/3M/6M momentum, 50/200 MA crossover, ATR-based entry/stop/target levels, and a 21-day GBM forecast per ticker — then rank a BUY/HOLD/SELL composite score. <strong>Frontier</strong> samples 5,000 random weights. <strong>Monte Carlo</strong> Cholesky-decomposes the covariance and simulates 1,000 GBM paths. <strong>Pairs trading</strong> finds the top-correlated pair, fits an OLS hedge ratio, and z-scores the spread.</p>
           </div>
         </li>
         <li>
@@ -297,17 +297,18 @@
         </li>
       </ol>
 
-      <h3 class="hiw-section-title">"How does it take trades?" — It doesn't.</h3>
+      <h3 class="hiw-section-title">What the Lab Does &amp; Doesn't</h3>
       <div class="hiw-grid">
         <div class="hiw-card">
           <h4>What this app DOES</h4>
           <ul class="hiw-check">
-            <li>Pulls real historical market data</li>
-            <li>Calculates risk-adjusted returns (Sharpe, Sortino)</li>
-            <li>Optimizes hypothetical weight allocations</li>
-            <li>Simulates thousands of possible futures</li>
-            <li>Visualizes drift, drawdown, sector concentration</li>
-            <li>Helps you compare portfolio ideas side-by-side</li>
+            <li>Generates BUY / HOLD / SELL signals per ticker</li>
+            <li>Suggests entry zones, stop-losses, and price targets (ATR-sized)</li>
+            <li>Forecasts 21-day return distributions (lognormal / GBM)</li>
+            <li>Scans for pairs-trading opportunities (cointegration-style spread z)</li>
+            <li>Backtests portfolios vs. the S&amp;P 500 benchmark</li>
+            <li>Optimizes weights along the Markowitz efficient frontier</li>
+            <li>Runs 1,000-path Monte Carlo simulations of future equity</li>
           </ul>
         </div>
         <div class="hiw-card hiw-card-x">
@@ -316,8 +317,8 @@
             <li>Place real trades or connect to a broker</li>
             <li>Move money in or out of any account</li>
             <li>Account for taxes, commissions, or slippage</li>
-            <li>Predict the future — Monte Carlo is a "what-if," not a forecast</li>
             <li>Use real-time intraday quotes (it's end-of-day data)</li>
+            <li>Guarantee its forecasts — they're statistical projections, not predictions</li>
             <li>Provide personalized investment advice</li>
           </ul>
         </div>
@@ -325,16 +326,17 @@
 
       <h3 class="hiw-section-title">A Worked Example</h3>
       <div class="hiw-example">
-        <p>Say you enter <code>AAPL, MSFT, GOOGL</code> at equal weights from Jan 2023 to today.</p>
+        <p>Say you enter <code>AAPL, MSFT, GOOGL, AMZN, JPM</code> at equal weights over the last 3 years.</p>
         <ol>
-          <li><strong>Backtest tab:</strong> "If you had bought $1 of this 3-stock basket on Jan 2 2023 and held it until today, here's the equity curve, and here's what holding the S&amp;P 500 over the same period would have done."</li>
-          <li><strong>Frontier tab:</strong> "Of all the ways you could have weighted these 3 stocks, here's the cloud of possible outcomes. The Max-Sharpe portfolio would have given you the best risk-adjusted return."</li>
+          <li><strong>Trade Signals tab:</strong> "AMZN's RSI is 73 (overbought) and a death cross is active — model verdict: HOLD with -32 score. JPM is mid-range, no edge. Here are the entry zones, stops, and targets if any cross the BUY threshold."</li>
+          <li><strong>Pairs scan:</strong> "MSFT ↔ AMZN co-move at ρ = 0.56. Their log-spread sits at -0.61σ — within the ±1.5σ no-trade band, so wait."</li>
+          <li><strong>Backtest tab:</strong> "If you had bought $1 of this basket 3 years ago, here's the equity curve vs. the S&amp;P 500."</li>
+          <li><strong>Frontier tab:</strong> "Of all the ways you could weight these 5 stocks, the Max-Sharpe portfolio would have given the best risk-adjusted return."</li>
           <li><strong>Monte Carlo tab:</strong> "Assuming the next N years look statistically like the past, here are 1,000 plausible paths your $10k could take."</li>
-          <li><strong>Rebalancing tab:</strong> "If you rebalanced quarterly back to equal-weight versus just letting winners run, here's the gap."</li>
-          <li><strong>Sector tab:</strong> "All 3 of these are mega-cap Tech — your 'diversified' basket is actually 100% Technology."</li>
-          <li><strong>Risk Score tab:</strong> "Composite risk index = 72 / 100 → 'Aggressive.'"</li>
+          <li><strong>Sector tab:</strong> "4 of these 5 are Tech — your basket is more concentrated than it looks."</li>
+          <li><strong>Risk Score tab:</strong> "Composite risk index 72 / 100 → 'Aggressive.'"</li>
         </ol>
-        <p class="hiw-example-bottom">No order was sent to a broker, no shares were bought. It's all math on historical numbers.</p>
+        <p class="hiw-example-bottom">The signals are quant-derived hypotheses. You decide whether to act on them in your own brokerage account.</p>
       </div>
 
       <h3 class="hiw-section-title">Tech Stack</h3>
@@ -356,6 +358,37 @@
       </header>
 
       <div class="explain-grid">
+
+        <article class="explain-card">
+          <div class="explain-tag tag-signals">Trade Signals</div>
+          <h3>Forward-Looking Signals</h3>
+          <p><strong>What it is.</strong> A composite verdict (BUY / HOLD / SELL) for each ticker, derived from five independent quant indicators that each capture a different market regime.</p>
+          <p><strong>The indicators.</strong></p>
+          <ul>
+            <li><strong>RSI(14)</strong> — Wilder's Relative Strength Index. Below 30 = oversold (mean-reversion long); above 70 = overbought (mean-reversion short).</li>
+            <li><strong>Z-score (20d)</strong> — how many standard deviations price sits from its 20-day mean. <code>z = (P − μ<sub>20</sub>) / σ<sub>20</sub></code>. |z| &gt; 1.5 flags a stretched move.</li>
+            <li><strong>Momentum</strong> — total % return over 20 / 60 / 120 trading days. Strong positive momentum is a trend-following long; strong negative is a short.</li>
+            <li><strong>50/200 MA crossover</strong> — golden cross (50d &gt; 200d) is a long-term bullish regime; death cross is bearish.</li>
+            <li><strong>Volatility regime</strong> — ratio of 20-day to 1-year annualized vol. &gt; 1.4 = elevated risk; &lt; 0.7 = compressed.</li>
+          </ul>
+          <p><strong>The score.</strong> Each indicator contributes ±25 / ±15 / ±10 points to a -100 to +100 composite. ≥ +35 → BUY, ≤ -35 → SELL, otherwise HOLD.</p>
+          <p><strong>Trade levels.</strong> Entry zone, stop-loss, and target are sized using the 14-day ATR (Average True Range) so position risk is normalized across high- and low-vol stocks.</p>
+          <p><strong>21-day forecast.</strong> Projects a price distribution using the lognormal / GBM model: <code>ln(P<sub>T</sub>/P<sub>0</sub>) ~ N((μ − ½σ²)T, σ²T)</code>. Reports the median expected return and the 5th–95th percentile range.</p>
+        </article>
+
+        <article class="explain-card">
+          <div class="explain-tag tag-signals">Pairs Trading</div>
+          <h3>Statistical Arbitrage</h3>
+          <p><strong>What it is.</strong> A market-neutral strategy that bets two highly co-moving stocks will revert toward their long-run spread, regardless of overall market direction.</p>
+          <p><strong>How we run it.</strong></p>
+          <ul>
+            <li>Compute pairwise daily-return correlations across your basket.</li>
+            <li>Pick the pair with the highest ρ (must be ≥ 0.50 to be considered a real pair).</li>
+            <li>Fit a hedge ratio β by OLS regression of <code>ln(P<sub>A</sub>)</code> on <code>ln(P<sub>B</sub>)</code>.</li>
+            <li>Build the spread <code>S = ln(P<sub>A</sub>) − β · ln(P<sub>B</sub>)</code> and z-score it on a 60-day rolling window.</li>
+          </ul>
+          <p><strong>The trade.</strong> When |z| &gt; 1.5σ, the spread is statistically stretched. The signal: short the over-performer and go long the under-performer in proportions <code>1 : β</code>. Unwind when z reverts to 0.</p>
+        </article>
 
         <article class="explain-card">
           <div class="explain-tag">Overview</div>

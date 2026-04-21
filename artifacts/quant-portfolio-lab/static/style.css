@@ -912,12 +912,13 @@ tr:hover td { background: rgba(76,194,255,0.04); }
 }
 .t-chip-logo {
   position: relative; display: inline-flex; align-items: center; justify-content: center;
-  width: 18px; height: 18px; border-radius: 4px; overflow: hidden;
-  background: rgba(255,255,255,0.85);
+  width: 20px; height: 20px; border-radius: 5px; overflow: hidden;
+  flex: 0 0 auto;
 }
-.t-chip-logo img { width: 100%; height: 100%; object-fit: contain; position: absolute; inset: 0; }
+.t-chip-logo.has-logo { background: #fff !important; }
+.t-chip-logo img { width: 100%; height: 100%; object-fit: contain; position: absolute; inset: 0; padding: 1px; box-sizing: border-box; }
 .t-chip-fallback {
-  font-size: 10px; font-weight: 700; color: #1a2235; line-height: 1;
+  font-size: 10px; font-weight: 800; line-height: 1; letter-spacing: 0;
 }
 .t-chip-sym { letter-spacing: 0.04em; }
 .t-chip-x {
@@ -945,11 +946,11 @@ tr:hover td { background: rgba(76,194,255,0.04); }
 .dd-row.dd-picked { background: rgba(16,185,129,0.08); }
 .dd-logo {
   position: relative; display: inline-flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; border-radius: 6px; overflow: hidden; flex: 0 0 auto;
-  background: rgba(255,255,255,0.9);
+  width: 30px; height: 30px; border-radius: 7px; overflow: hidden; flex: 0 0 auto;
 }
-.dd-logo img { width: 100%; height: 100%; object-fit: contain; position: absolute; inset: 0; }
-.dd-fallback { font-size: 14px; font-weight: 700; color: #1a2235; }
+.dd-logo.has-logo { background: #fff !important; }
+.dd-logo img { width: 100%; height: 100%; object-fit: contain; position: absolute; inset: 0; padding: 2px; box-sizing: border-box; }
+.dd-fallback { font-size: 13px; font-weight: 800; }
 .dd-info { flex: 1; min-width: 0; }
 .dd-row-top { display: flex; align-items: center; gap: 8px; }
 .dd-sym { font-weight: 700; font-size: 12.5px; letter-spacing: 0.04em; }
@@ -971,11 +972,12 @@ tr:hover td { background: rgba(76,194,255,0.04); }
 .sig-card-id { display: flex; gap: 12px; align-items: flex-start; }
 .sig-card-logo {
   position: relative; display: inline-flex; align-items: center; justify-content: center;
-  width: 44px; height: 44px; border-radius: 8px; overflow: hidden; flex: 0 0 auto;
-  background: rgba(255,255,255,0.9);
+  width: 48px; height: 48px; border-radius: 10px; overflow: hidden; flex: 0 0 auto;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
 }
-.sig-card-logo img { width: 100%; height: 100%; object-fit: contain; position: absolute; inset: 0; }
-.sig-card-logo-fb { font-size: 18px; font-weight: 800; color: #1a2235; }
+.sig-card-logo.has-logo { background: #fff !important; }
+.sig-card-logo img { width: 100%; height: 100%; object-fit: contain; position: absolute; inset: 0; padding: 4px; box-sizing: border-box; }
+.sig-card-logo-fb { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
 .sig-card-name { font-size: 11px; color: var(--muted); margin: 2px 0 2px; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sig-card-ex {
   font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px;
@@ -987,11 +989,12 @@ tr:hover td { background: rgba(76,194,255,0.04); }
 /* Table row logos */
 .t-row-logo-wrap {
   position: relative; display: inline-flex; align-items: center; justify-content: center;
-  width: 18px; height: 18px; border-radius: 4px; overflow: hidden; margin-right: 8px;
-  vertical-align: middle; background: rgba(255,255,255,0.9);
+  width: 20px; height: 20px; border-radius: 5px; overflow: hidden; margin-right: 8px;
+  vertical-align: middle;
 }
-.t-row-logo-wrap img { width: 100%; height: 100%; object-fit: contain; position: absolute; inset: 0; }
-.t-row-logo-fb { font-size: 10px; font-weight: 700; color: #1a2235; line-height: 1; }
+.t-row-logo-wrap.has-logo { background: #fff !important; }
+.t-row-logo-wrap img { width: 100%; height: 100%; object-fit: contain; position: absolute; inset: 0; padding: 1px; box-sizing: border-box; }
+.t-row-logo-fb { font-size: 10px; font-weight: 800; line-height: 1; }
 
 /* As-of pills */
 .asof { display: flex; gap: 6px; align-items: center; }

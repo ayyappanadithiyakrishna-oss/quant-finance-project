@@ -52,9 +52,27 @@ const selectedTickers = (document.getElementById("tickers").value || "")
   .split(",").map(s => s.trim().toUpperCase()).filter(Boolean);
 
 function logoUrl(domain) {
-  return domain ? `https://icons.duckduckgo.com/ip3/${domain}.ico` : "";
+  return domain
+    ? `https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://${domain}&size=128`
+    : "";
 }
 function tickerInitial(sym) { return (sym || "?").slice(0, 1); }
+// Deterministic pleasant color per ticker for letter-tile fallbacks
+const TILE_PALETTE = [
+  ["#5b8def","#1e3a8a"], ["#10b981","#064e3b"], ["#f59e0b","#78350f"],
+  ["#ef4444","#7f1d1d"], ["#8b5cf6","#4c1d95"], ["#ec4899","#831843"],
+  ["#06b6d4","#164e63"], ["#84cc16","#365314"], ["#f97316","#7c2d12"],
+  ["#14b8a6","#134e4a"], ["#6366f1","#312e81"], ["#d946ef","#701a75"],
+];
+function tileColor(sym) {
+  let h = 0;
+  for (let i = 0; i < sym.length; i++) h = (h * 31 + sym.charCodeAt(i)) | 0;
+  return TILE_PALETTE[Math.abs(h) % TILE_PALETTE.length];
+}
+function tileStyle(sym) {
+  const [c1, c2] = tileColor(sym);
+  return `background:linear-gradient(135deg, ${c1} 0%, ${c2} 100%);color:#fff;`;
+}
 
 function chipHtml(meta) {
   const sym = meta.symbol;
@@ -62,9 +80,9 @@ function chipHtml(meta) {
   const initial = tickerInitial(sym);
   return `
     <span class="t-chip" data-sym="${sym}" title="${meta.name || sym} · ${meta.exchange || ""}">
-      <span class="t-chip-logo">
+      <span class="t-chip-logo" style="${tileStyle(sym)}">
         <span class="t-chip-fallback">${initial}</span>
-        ${dom ? `<img src="${logoUrl(dom)}" alt="" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">` : ""}
+        ${dom ? `<img src="${logoUrl(dom)}" alt="" onload="this.previousElementSibling.style.display='none';this.parentElement.classList.add('has-logo');" onerror="this.style.display='none'">` : ""}
       </span>
       <span class="t-chip-sym">${sym}</span>
       <button class="t-chip-x" data-sym="${sym}" aria-label="Remove ${sym}">×</button>
@@ -121,9 +139,9 @@ function renderDropdown(query) {
     const initial = tickerInitial(u.symbol);
     return `
       <div class="dd-row ${picked ? "dd-picked" : ""}" data-sym="${u.symbol}">
-        <span class="dd-logo">
+        <span class="dd-logo" style="${tileStyle(u.symbol)}">
           <span class="dd-fallback">${initial}</span>
-          ${u.domain ? `<img src="${logoUrl(u.domain)}" alt="" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">` : ""}
+          ${u.domain ? `<img src="${logoUrl(u.domain)}" alt="" onload="this.previousElementSibling.style.display='none';this.parentElement.classList.add('has-logo');" onerror="this.style.display='none'">` : ""}
         </span>
         <div class="dd-info">
           <div class="dd-row-top">
@@ -793,12 +811,12 @@ function renderSignals(d) {
     const fc = t.forecast;
     const meter = Math.max(2, Math.abs(t.score));
     const m = (cache.meta && cache.meta[t.ticker]) || { name: t.ticker, exchange: "", domain: "" };
-    const logo = m.domain ? `<img src="${logoUrl(m.domain)}" alt="" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">` : "";
+    const logo = m.domain ? `<img src="${logoUrl(m.domain)}" alt="" onload="this.previousElementSibling.style.display='none';this.parentElement.classList.add('has-logo');" onerror="this.style.display='none'">` : "";
     return `
       <div class="sig-card ${verdictClass(t.verdict)}">
         <div class="sig-card-head">
           <div class="sig-card-id">
-            <span class="sig-card-logo"><span class="sig-card-logo-fb">${tickerInitial(t.ticker)}</span>${logo}</span>
+            <span class="sig-card-logo" style="${tileStyle(t.ticker)}"><span class="sig-card-logo-fb">${tickerInitial(t.ticker)}</span>${logo}</span>
             <div>
               <div class="sig-card-ticker">${t.ticker} <span class="sig-card-ex ex-${(m.exchange||'').toLowerCase()}">${m.exchange || ""}</span></div>
               <div class="sig-card-name">${m.name || ""}</div>
@@ -839,10 +857,10 @@ function renderSignals(d) {
   // Full matrix table
   const rows = d.ranked.map(t => {
     const m = (cache.meta && cache.meta[t.ticker]) || {};
-    const logo = m.domain ? `<img src="${logoUrl(m.domain)}" class="t-row-logo" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">` : "";
+    const logo = m.domain ? `<img src="${logoUrl(m.domain)}" class="t-row-logo" onload="this.previousElementSibling.style.display='none';this.parentElement.classList.add('has-logo');" onerror="this.style.display='none'">` : "";
     return `
     <tr class="${verdictClass(t.verdict)}-row">
-      <td class="t-tk"><span class="t-row-logo-wrap"><span class="t-row-logo-fb">${tickerInitial(t.ticker)}</span>${logo}</span>${t.ticker}</td>
+      <td class="t-tk"><span class="t-row-logo-wrap" style="${tileStyle(t.ticker)}"><span class="t-row-logo-fb">${tickerInitial(t.ticker)}</span>${logo}</span>${t.ticker}</td>
       <td>${fmtMoney(t.price)}</td>
       <td><span class="t-verdict ${verdictClass(t.verdict)}">${t.verdict}</span></td>
       <td>${t.score >= 0 ? "+" : ""}${t.score.toFixed(0)}</td>

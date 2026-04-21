@@ -44,7 +44,163 @@ function titleCfg(text) {
 })();
 
 // Cache last results for CSV exports
-const cache = { analytics: null, backtest: null };
+const cache = { analytics: null, backtest: null, signals: null, universe: null, meta: {} };
+
+// ============ Ticker Picker ============
+const MAX_TICKERS = 10;
+const selectedTickers = (document.getElementById("tickers").value || "")
+  .split(",").map(s => s.trim().toUpperCase()).filter(Boolean);
+
+function logoUrl(domain) {
+  return domain ? `https://icons.duckduckgo.com/ip3/${domain}.ico` : "";
+}
+function tickerInitial(sym) { return (sym || "?").slice(0, 1); }
+
+function chipHtml(meta) {
+  const sym = meta.symbol;
+  const dom = meta.domain || "";
+  const initial = tickerInitial(sym);
+  return `
+    <span class="t-chip" data-sym="${sym}" title="${meta.name || sym} · ${meta.exchange || ""}">
+      <span class="t-chip-logo">
+        <span class="t-chip-fallback">${initial}</span>
+        ${dom ? `<img src="${logoUrl(dom)}" alt="" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">` : ""}
+      </span>
+      <span class="t-chip-sym">${sym}</span>
+      <button class="t-chip-x" data-sym="${sym}" aria-label="Remove ${sym}">×</button>
+    </span>
+  `;
+}
+
+function syncHiddenTickers() {
+  document.getElementById("tickers").value = selectedTickers.join(",");
+}
+
+function renderChips() {
+  const universe = cache.universe || [];
+  const bySym = Object.fromEntries(universe.map(u => [u.symbol, u]));
+  const wrap = document.getElementById("ticker-chips");
+  wrap.innerHTML = selectedTickers.map(s => chipHtml(bySym[s] || { symbol: s, name: s, exchange: "", domain: "" })).join("");
+  wrap.querySelectorAll(".t-chip-x").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const sym = btn.dataset.sym;
+      const i = selectedTickers.indexOf(sym);
+      if (i >= 0) selectedTickers.splice(i, 1);
+      syncHiddenTickers();
+      renderChips();
+    });
+  });
+  syncHiddenTickers();
+}
+
+function renderDropdown(query) {
+  const dd = document.getElementById("ticker-dropdown");
+  if (!cache.universe) { dd.classList.add("hidden"); return; }
+  const q = (query || "").trim().toUpperCase();
+  let results = cache.universe;
+  if (q) {
+    results = results.filter(u =>
+      u.symbol.startsWith(q) || u.name.toUpperCase().includes(q)
+    );
+    // Symbol exact-match first
+    results.sort((a, b) => {
+      const aExact = a.symbol === q ? -2 : a.symbol.startsWith(q) ? -1 : 0;
+      const bExact = b.symbol === q ? -2 : b.symbol.startsWith(q) ? -1 : 0;
+      return aExact - bExact;
+    });
+  }
+  results = results.slice(0, 30);
+  if (!results.length) {
+    dd.innerHTML = `<div class="dd-empty">No matches in NYSE / NASDAQ universe</div>`;
+    dd.classList.remove("hidden");
+    return;
+  }
+  dd.innerHTML = results.map(u => {
+    const picked = selectedTickers.includes(u.symbol);
+    const initial = tickerInitial(u.symbol);
+    return `
+      <div class="dd-row ${picked ? "dd-picked" : ""}" data-sym="${u.symbol}">
+        <span class="dd-logo">
+          <span class="dd-fallback">${initial}</span>
+          ${u.domain ? `<img src="${logoUrl(u.domain)}" alt="" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">` : ""}
+        </span>
+        <div class="dd-info">
+          <div class="dd-row-top">
+            <span class="dd-sym">${u.symbol}</span>
+            <span class="dd-exchange ex-${u.exchange.toLowerCase()}">${u.exchange}</span>
+          </div>
+          <div class="dd-name">${u.name}</div>
+        </div>
+        <div class="dd-sector">${u.sector}</div>
+        <div class="dd-add">${picked ? "✓" : "+"}</div>
+      </div>
+    `;
+  }).join("");
+  dd.classList.remove("hidden");
+  dd.querySelectorAll(".dd-row").forEach(row => {
+    row.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      const sym = row.dataset.sym;
+      const i = selectedTickers.indexOf(sym);
+      if (i >= 0) {
+        selectedTickers.splice(i, 1);
+      } else {
+        if (selectedTickers.length >= MAX_TICKERS) {
+          showError(`Maximum ${MAX_TICKERS} tickers. Remove one first.`);
+          return;
+        }
+        selectedTickers.push(sym);
+      }
+      renderChips();
+      renderDropdown(document.getElementById("ticker-search").value);
+    });
+  });
+}
+
+async function loadUniverse() {
+  try {
+    const r = await fetch("/universe");
+    const j = await r.json();
+    cache.universe = j.data || [];
+    renderChips();
+  } catch (e) {
+    console.error("universe load failed", e);
+    cache.universe = [];
+    renderChips();
+  }
+}
+
+(function initTickerPicker() {
+  const input = document.getElementById("ticker-search");
+  const dd = document.getElementById("ticker-dropdown");
+  const wrap = document.getElementById("ticker-picker");
+  input.addEventListener("focus", () => renderDropdown(input.value));
+  input.addEventListener("input", () => renderDropdown(input.value));
+  input.addEventListener("blur", () => setTimeout(() => dd.classList.add("hidden"), 150));
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Backspace" && !input.value && selectedTickers.length) {
+      selectedTickers.pop();
+      renderChips();
+    } else if (e.key === "Enter") {
+      const q = input.value.trim().toUpperCase();
+      if (q && cache.universe) {
+        const found = cache.universe.find(u => u.symbol === q) || cache.universe.find(u => u.symbol.startsWith(q));
+        if (found && !selectedTickers.includes(found.symbol) && selectedTickers.length < MAX_TICKERS) {
+          selectedTickers.push(found.symbol);
+          renderChips();
+          input.value = "";
+          renderDropdown("");
+        }
+      }
+      e.preventDefault();
+    } else if (e.key === "Escape") {
+      dd.classList.add("hidden");
+    }
+  });
+  wrap.addEventListener("click", () => input.focus());
+  loadUniverse();
+})();
 
 // State helpers
 function getState() {
@@ -615,7 +771,10 @@ function fmtPct(v, signed = true) {
 function pctClass(v) { return v > 0 ? "pos" : v < 0 ? "neg" : ""; }
 
 function renderSignals(d) {
-  document.getElementById("signals-asof").textContent = "As of " + d.as_of;
+  cache.meta = d.meta || {};
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById("signals-asof").innerHTML =
+    `<span class="asof-pill">DATA ${d.as_of}</span> <span class="asof-pill asof-live">RECOMPUTED ${today}</span>`;
 
   // Summary chips
   const s = d.summary;
@@ -633,12 +792,18 @@ function renderSignals(d) {
     const lev = t.levels;
     const fc = t.forecast;
     const meter = Math.max(2, Math.abs(t.score));
+    const m = (cache.meta && cache.meta[t.ticker]) || { name: t.ticker, exchange: "", domain: "" };
+    const logo = m.domain ? `<img src="${logoUrl(m.domain)}" alt="" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">` : "";
     return `
       <div class="sig-card ${verdictClass(t.verdict)}">
         <div class="sig-card-head">
-          <div>
-            <div class="sig-card-ticker">${t.ticker}</div>
-            <div class="sig-card-price">${fmtMoney(t.price)}</div>
+          <div class="sig-card-id">
+            <span class="sig-card-logo"><span class="sig-card-logo-fb">${tickerInitial(t.ticker)}</span>${logo}</span>
+            <div>
+              <div class="sig-card-ticker">${t.ticker} <span class="sig-card-ex ex-${(m.exchange||'').toLowerCase()}">${m.exchange || ""}</span></div>
+              <div class="sig-card-name">${m.name || ""}</div>
+              <div class="sig-card-price">${fmtMoney(t.price)}</div>
+            </div>
           </div>
           <div class="sig-card-verdict ${verdictClass(t.verdict)}">
             ${t.verdict}
@@ -672,9 +837,12 @@ function renderSignals(d) {
   }).join("");
 
   // Full matrix table
-  const rows = d.ranked.map(t => `
+  const rows = d.ranked.map(t => {
+    const m = (cache.meta && cache.meta[t.ticker]) || {};
+    const logo = m.domain ? `<img src="${logoUrl(m.domain)}" class="t-row-logo" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">` : "";
+    return `
     <tr class="${verdictClass(t.verdict)}-row">
-      <td class="t-tk">${t.ticker}</td>
+      <td class="t-tk"><span class="t-row-logo-wrap"><span class="t-row-logo-fb">${tickerInitial(t.ticker)}</span>${logo}</span>${t.ticker}</td>
       <td>${fmtMoney(t.price)}</td>
       <td><span class="t-verdict ${verdictClass(t.verdict)}">${t.verdict}</span></td>
       <td>${t.score >= 0 ? "+" : ""}${t.score.toFixed(0)}</td>
@@ -686,7 +854,7 @@ function renderSignals(d) {
       <td>${t.vol_regime.short_vol.toFixed(0)}% (${t.vol_regime.regime})</td>
       <td class="${pctClass(t.forecast.expected_return_pct)}">${fmtPct(t.forecast.expected_return_pct)}</td>
     </tr>
-  `).join("");
+  `;}).join("");
   document.getElementById("signals-table").innerHTML = `
     <table class="sig-table">
       <thead><tr>

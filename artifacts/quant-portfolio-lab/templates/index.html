@@ -47,8 +47,13 @@
     <header class="topbar">
       <div class="topbar-grid">
         <div class="field field-tickers">
-          <label>Tickers <span class="hint">max 10</span></label>
-          <input id="tickers" type="text" value="AAPL, MSFT, GOOGL, AMZN, JPM" autocomplete="off" spellcheck="false" />
+          <label>Tickers <span class="hint">NYSE / NASDAQ · max 10</span></label>
+          <div id="ticker-picker" class="ticker-picker">
+            <div id="ticker-chips" class="ticker-chips"></div>
+            <input id="ticker-search" type="text" placeholder="Search company or symbol…" autocomplete="off" spellcheck="false" />
+            <div id="ticker-dropdown" class="ticker-dropdown hidden"></div>
+          </div>
+          <input id="tickers" type="hidden" value="AAPL,MSFT,GOOGL,AMZN,JPM" />
         </div>
         <div class="field field-weights">
           <label>Weights <span class="hint">optional</span></label>

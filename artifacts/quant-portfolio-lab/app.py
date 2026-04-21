@@ -1,7 +1,9 @@
 """Quant Portfolio Lab - Flask backend."""
 from __future__ import annotations
 
+import json
 import logging
+import os
 import time
 import traceback
 from functools import wraps
@@ -64,6 +66,18 @@ def index():
 @app.route("/healthz")
 def healthz():
     return jsonify({"status": "ok"})
+
+
+_UNIVERSE_PATH = os.path.join(os.path.dirname(__file__), "data", "universe.json")
+with open(_UNIVERSE_PATH, "r", encoding="utf-8") as _f:
+    UNIVERSE = json.load(_f)
+UNIVERSE_BY_SYMBOL = {row["symbol"]: row for row in UNIVERSE}
+
+
+@app.route("/universe")
+def route_universe():
+    """Return the supported NYSE/NASDAQ ticker universe (cached client-side)."""
+    return jsonify({"status": "success", "data": UNIVERSE, "count": len(UNIVERSE)})
 
 
 @app.route("/analytics", methods=["POST"])
@@ -166,6 +180,8 @@ def route_sector(cleaned, payload):
 def route_signals(cleaned, payload):
     state = load_portfolio(cleaned)
     res = signals.trade_signals(state)
+    # Enrich each signal with company metadata for the UI
+    res["meta"] = {t: UNIVERSE_BY_SYMBOL.get(t, {"symbol": t, "name": t, "exchange": "—", "sector": "—", "domain": ""}) for t in res["tickers"]}
     s = res["summary"]
     insight = (
         f"As of {res['as_of']}: {s['buy']} BUY · {s['hold']} HOLD · {s['sell']} SELL signals "

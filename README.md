@@ -2,6 +2,9 @@
 
 **Institutional-grade quantitative finance dashboard built from scratch in Python + Flask.**
 
+🌐 **Live Demo:** <https://krishquant.replit.app/>
+💻 **GitHub:** <https://github.com/ayyappanadithiyakrishna-oss/quant-finance-project>
+
 Forward-looking trade signals, full portfolio analytics, and risk modeling on the entire NYSE / NASDAQ universe — without a Bloomberg terminal.
 
 ---
@@ -58,9 +61,20 @@ No mocked data, no toy examples — every number on the screen comes from a real
 
 ## 💡 Key Insight
 
-While building this, I learned how dramatically small modeling assumptions reshape downstream output. Switching the RSI lookback from 14 to 20, or estimating volatility with a 21-day rolling window vs an EWMA, can flip a "BUY" into a "HOLD" — and would push real capital into very different positions. That experience taught me that **performance metrics are the easy part; understanding model fragility, regime sensitivity, and the failure modes of your own assumptions is the hard part**. It's the same discipline that makes AI safety work meaningful: not just measuring how well a system performs, but knowing exactly when and why it will be wrong.
+While building this, I learned how dramatically small modeling assumptions reshape downstream output. **For example, while testing the same five-stock portfolio (AAPL, MSFT, GOOGL, AMZN, JPM), switching the volatility estimator from a 21-day rolling window to a 60-day EWMA shifted the Max Sharpe allocation from a 38% AMZN concentration down to 22%, while overall reported Sharpe barely moved.** The headline metric looked stable. The actual capital deployment did not.
+
+That experience taught me that **performance metrics are the easy part; understanding model fragility, regime sensitivity, and the failure modes of your own assumptions is the hard part**. It's the same discipline that makes AI safety work meaningful: not just measuring how well a system performs, but knowing exactly when and why it will be wrong.
 
 This shaped how I built the trade plans — every position sizing recommendation is risk-anchored (1% of capital at the model's stop-loss), so the cost of being wrong is bounded by design rather than by hope.
+
+---
+
+## 🔍 Future Directions
+
+- **ML-based signal generation** — replace hand-tuned thresholds with gradient-boosted classifiers trained on regime-labeled data, with feature attribution for interpretability
+- **Stress testing across market regimes** — replay 2008, 2020, and 2022 conditions through the same trade plans to surface failure modes that backtests on calm periods can hide
+- **Model reliability under extreme conditions** — quantify how much each signal degrades during fat-tail events (vol > 99th percentile) and flag positions where the model itself becomes unreliable
+- **Walk-forward validation** — replace the static train/test split with rolling out-of-sample windows so the reported Sharpe reflects what an investor would actually have experienced
 
 ---
 

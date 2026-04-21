@@ -23,8 +23,10 @@
       </div>
     </div>
     <nav>
+      <div class="nav-group-label">Trading</div>
+      <a href="#signals" class="nav-link active" data-section="signals"><span class="nav-icon">⬢</span>Trade Signals</a>
       <div class="nav-group-label">Analysis</div>
-      <a href="#overview" class="nav-link active" data-section="overview"><span class="nav-icon">◐</span>Overview</a>
+      <a href="#overview" class="nav-link" data-section="overview"><span class="nav-icon">◐</span>Overview</a>
       <a href="#frontier" class="nav-link" data-section="frontier"><span class="nav-icon">◢</span>Efficient Frontier</a>
       <a href="#backtest" class="nav-link" data-section="backtest"><span class="nav-icon">◇</span>Backtest</a>
       <a href="#montecarlo" class="nav-link" data-section="montecarlo"><span class="nav-icon">◉</span>Monte Carlo</a>
@@ -75,6 +77,34 @@
       </div>
       <div id="skipped-warning" class="skipped"></div>
     </header>
+
+    <section id="signals" class="section signals-section">
+      <header class="section-head">
+        <div>
+          <h2>Trade Signals <span class="live-pill">LIVE</span></h2>
+          <p class="section-sub">Forward-looking quant signals for each ticker — RSI, momentum, mean-reversion z-scores, MA crossovers, volatility regime — combined into a BUY / HOLD / SELL verdict with suggested entry, stop-loss, and target.</p>
+        </div>
+        <div id="signals-asof" class="asof"></div>
+      </header>
+      <div id="signals-loading" class="loading hidden"><div class="spinner"></div></div>
+
+      <div id="signals-summary" class="signals-summary"></div>
+
+      <h3 class="hiw-section-title">Top Trade Ideas</h3>
+      <div id="signals-cards" class="signals-cards"></div>
+
+      <h3 class="hiw-section-title">Full Signal Matrix</h3>
+      <div id="signals-table" class="signals-table-wrap"></div>
+
+      <h3 class="hiw-section-title">Pairs Trading Scan</h3>
+      <div id="signals-pair" class="pair-block"></div>
+
+      <div class="insight" id="signals-insight"></div>
+      <div class="signals-disclaimer">
+        Signals are derived from technical indicators on historical end-of-day data and are not investment advice.
+        Always size positions to your own risk tolerance and confirm with your own research before trading.
+      </div>
+    </section>
 
     <section id="overview" class="section">
       <header class="section-head">

@@ -9,7 +9,7 @@ from functools import wraps
 import numpy as np
 from flask import Flask, jsonify, render_template, request
 
-from utils import analytics, backtest, optimization, rebalancing, risk_score, sector, simulation
+from utils import analytics, backtest, optimization, rebalancing, risk_score, sector, signals, simulation
 from utils.data import load_portfolio, validate_inputs
 from utils.insight import (
     backtest_insight,
@@ -159,6 +159,21 @@ def route_sector(cleaned, payload):
     state = load_portfolio(cleaned)
     info = sector.sector_breakdown(state["tickers"], state["weights"])
     return {"data": info, "insight": sector_insight(info)}
+
+
+@app.route("/signals", methods=["POST"])
+@api_route
+def route_signals(cleaned, payload):
+    state = load_portfolio(cleaned)
+    res = signals.trade_signals(state)
+    s = res["summary"]
+    insight = (
+        f"As of {res['as_of']}: {s['buy']} BUY · {s['hold']} HOLD · {s['sell']} SELL signals "
+        f"across {len(res['tickers'])} tickers."
+    )
+    if res.get("pair") and res["pair"]["action"] != "wait":
+        insight += f" Pairs trade flagged: {res['pair']['signal']} (z = {res['pair']['spread_z']:+.2f})."
+    return {"data": res, "insight": insight}
 
 
 @app.route("/riskscore", methods=["POST"])

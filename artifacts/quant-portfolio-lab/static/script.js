@@ -503,6 +503,7 @@ async function runAll() {
   showSkipped([]);
 
   const tasks = [
+    runSignals(state),
     runOverview(state),
     runFrontier(state),
     runBacktest(state),
@@ -589,6 +590,152 @@ async function runRisk(state) {
     document.getElementById("risk-insight").textContent = r.insight;
   } catch (e) { showError("Risk: " + e.message); }
   finally { setLoading("risk-loading", false); }
+}
+
+// ============ Trade Signals ============
+async function runSignals(state) {
+  setLoading("signals-loading", true);
+  try {
+    const r = await api("/signals", state);
+    cache.signals = r.data;
+    renderSignals(r.data);
+    document.getElementById("signals-insight").textContent = r.insight;
+  } catch (e) { showError("Signals: " + e.message); }
+  finally { setLoading("signals-loading", false); }
+}
+
+function verdictClass(v) {
+  return v === "BUY" ? "v-buy" : v === "SELL" ? "v-sell" : "v-hold";
+}
+function fmtMoney(v) { return "$" + v.toFixed(2); }
+function fmtPct(v, signed = true) {
+  const s = (signed && v > 0 ? "+" : "") + v.toFixed(1) + "%";
+  return s;
+}
+function pctClass(v) { return v > 0 ? "pos" : v < 0 ? "neg" : ""; }
+
+function renderSignals(d) {
+  document.getElementById("signals-asof").textContent = "As of " + d.as_of;
+
+  // Summary chips
+  const s = d.summary;
+  const total = s.buy + s.hold + s.sell;
+  document.getElementById("signals-summary").innerHTML = `
+    <div class="sig-chip sig-buy"><div class="sig-chip-num">${s.buy}</div><div class="sig-chip-lbl">BUY signals</div></div>
+    <div class="sig-chip sig-hold"><div class="sig-chip-num">${s.hold}</div><div class="sig-chip-lbl">HOLD</div></div>
+    <div class="sig-chip sig-sell"><div class="sig-chip-num">${s.sell}</div><div class="sig-chip-lbl">SELL signals</div></div>
+    <div class="sig-chip sig-total"><div class="sig-chip-num">${total}</div><div class="sig-chip-lbl">tickers analyzed</div></div>
+  `;
+
+  // Top trade idea cards (top 3 by abs score, but show all if <=4)
+  const cards = d.ranked.slice(0, Math.min(4, d.ranked.length));
+  document.getElementById("signals-cards").innerHTML = cards.map(t => {
+    const lev = t.levels;
+    const fc = t.forecast;
+    const meter = Math.max(2, Math.abs(t.score));
+    return `
+      <div class="sig-card ${verdictClass(t.verdict)}">
+        <div class="sig-card-head">
+          <div>
+            <div class="sig-card-ticker">${t.ticker}</div>
+            <div class="sig-card-price">${fmtMoney(t.price)}</div>
+          </div>
+          <div class="sig-card-verdict ${verdictClass(t.verdict)}">
+            ${t.verdict}
+            <div class="sig-card-score">score ${t.score >= 0 ? "+" : ""}${t.score.toFixed(0)}</div>
+          </div>
+        </div>
+        <div class="sig-meter"><div class="sig-meter-fill ${verdictClass(t.verdict)}" style="width:${meter}%"></div></div>
+        <div class="sig-card-grid">
+          <div><span>RSI</span><b>${t.rsi.toFixed(0)}</b></div>
+          <div><span>Z-score</span><b>${t.zscore >= 0 ? "+" : ""}${t.zscore.toFixed(2)}σ</b></div>
+          <div><span>1M momentum</span><b class="${pctClass(t.momentum_1m)}">${fmtPct(t.momentum_1m)}</b></div>
+          <div><span>3M momentum</span><b class="${pctClass(t.momentum_3m)}">${fmtPct(t.momentum_3m)}</b></div>
+          <div><span>50/200 MA</span><b>${t.ma_cross.state === "n/a" ? "—" : t.ma_cross.state.toUpperCase()}</b></div>
+          <div><span>Vol regime</span><b>${t.vol_regime.regime}</b></div>
+        </div>
+        <div class="sig-rationale">
+          ${t.rationale.length ? t.rationale.map(r => `<div>• ${r}</div>`).join("") : "<div class='muted'>• Mixed/neutral signals — no edge detected</div>"}
+        </div>
+        <div class="sig-levels">
+          <div class="lvl"><span>Entry zone</span><b>${fmtMoney(lev.entry_lo)} – ${fmtMoney(lev.entry_hi)}</b></div>
+          <div class="lvl lvl-stop"><span>Stop loss</span><b>${fmtMoney(lev.stop_loss)}</b></div>
+          <div class="lvl lvl-target"><span>Target</span><b>${fmtMoney(lev.target)}</b></div>
+          <div class="lvl"><span>R / R</span><b>${lev.risk_reward.toFixed(2)}×</b></div>
+        </div>
+        <div class="sig-forecast">
+          21-day forecast: <b class="${pctClass(fc.expected_return_pct)}">${fmtPct(fc.expected_return_pct)}</b>
+          &nbsp;·&nbsp; 90% range <b>${fmtMoney(fc.p5)} → ${fmtMoney(fc.p95)}</b>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  // Full matrix table
+  const rows = d.ranked.map(t => `
+    <tr class="${verdictClass(t.verdict)}-row">
+      <td class="t-tk">${t.ticker}</td>
+      <td>${fmtMoney(t.price)}</td>
+      <td><span class="t-verdict ${verdictClass(t.verdict)}">${t.verdict}</span></td>
+      <td>${t.score >= 0 ? "+" : ""}${t.score.toFixed(0)}</td>
+      <td>${t.rsi.toFixed(0)}</td>
+      <td>${t.zscore >= 0 ? "+" : ""}${t.zscore.toFixed(2)}</td>
+      <td class="${pctClass(t.momentum_1m)}">${fmtPct(t.momentum_1m)}</td>
+      <td class="${pctClass(t.momentum_3m)}">${fmtPct(t.momentum_3m)}</td>
+      <td>${t.ma_cross.state === "n/a" ? "—" : t.ma_cross.state}</td>
+      <td>${t.vol_regime.short_vol.toFixed(0)}% (${t.vol_regime.regime})</td>
+      <td class="${pctClass(t.forecast.expected_return_pct)}">${fmtPct(t.forecast.expected_return_pct)}</td>
+    </tr>
+  `).join("");
+  document.getElementById("signals-table").innerHTML = `
+    <table class="sig-table">
+      <thead><tr>
+        <th>Ticker</th><th>Price</th><th>Verdict</th><th>Score</th>
+        <th>RSI</th><th>Z-score</th><th>1M</th><th>3M</th>
+        <th>MA 50/200</th><th>20d Vol</th><th>21d Forecast</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+
+  // Pairs
+  const pairEl = document.getElementById("signals-pair");
+  if (!d.pair) {
+    pairEl.innerHTML = `<div class="pair-empty">No correlated pair (ρ ≥ 0.5) found among these tickers — pairs trading needs at least two highly co-moving stocks.</div>`;
+  } else {
+    const p = d.pair;
+    const actionClass = p.action === "wait" ? "v-hold" : "v-buy";
+    pairEl.innerHTML = `
+      <div class="pair-head">
+        <div>
+          <div class="pair-name">${p.ticker_a} ↔ ${p.ticker_b}</div>
+          <div class="pair-meta">ρ = ${p.correlation.toFixed(2)} &nbsp;·&nbsp; hedge ratio β = ${p.hedge_ratio.toFixed(2)} &nbsp;·&nbsp; spread z = ${p.spread_z >= 0 ? "+" : ""}${p.spread_z.toFixed(2)}σ</div>
+        </div>
+        <div class="pair-signal ${actionClass}">${p.signal}</div>
+      </div>
+      <div id="pair-chart" style="height:280px;margin-top:8px;"></div>
+      <div class="pair-explain">
+        Pairs trading bets that two co-moving stocks revert toward their long-run spread. When the spread is &gt; 1.5σ from its 60-day mean, the model flags a mean-reversion trade: short the over-performer, long the under-performer, and unwind when the spread returns to zero.
+      </div>
+    `;
+    // Spread chart
+    const spread = p.spread_series;
+    const dates = p.spread_dates;
+    Plotly.newPlot("pair-chart", [
+      { x: dates, y: spread, type: "scatter", mode: "lines", name: "Spread", line: { color: "#4cc2ff", width: 2 } },
+      { x: dates, y: dates.map(_ => p.spread_mean), type: "scatter", mode: "lines", name: "Mean", line: { color: "#a5aec3", dash: "dot" } },
+      { x: dates, y: dates.map(_ => p.z_upper), type: "scatter", mode: "lines", name: "+1.5σ", line: { color: "#ef4444", dash: "dash" } },
+      { x: dates, y: dates.map(_ => p.z_lower), type: "scatter", mode: "lines", name: "-1.5σ", line: { color: "#3ddc97", dash: "dash" } },
+    ], {
+      ...PLOTLY_LAYOUT_DEFAULTS,
+      height: 280,
+      margin: { l: 50, r: 16, t: 8, b: 60 },
+      xaxis: { ...AXIS_DEFAULTS, type: "category", nticks: 6, tickangle: 0 },
+      yaxis: { ...AXIS_DEFAULTS, type: "linear", title: { text: "log spread", font: { family: FONT_FAMILY, size: 11, color: "#a5aec3" } } },
+      showlegend: true,
+      legend: { ...PLOTLY_LAYOUT_DEFAULTS.legend, orientation: "h", y: -0.22 },
+    }, PLOTLY_CONFIG);
+  }
 }
 
 // CSV export

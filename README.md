@@ -3,7 +3,7 @@
 **Institutional-grade quantitative finance dashboard built from scratch in Python + Flask.**
 
 🌐 **Live Demo:** <https://krishquant.replit.app/>
-💻 **GitHub:** <https://github.com/ayyappanadithiyakrishna-oss/quant-finance-project>
+💻 **GitHub:** <https://github.com/ayyappanadithiyakrishna-oss/quant-portfolio-lab>
 
 Forward-looking trade signals, full portfolio analytics, and risk modeling on the entire NYSE / NASDAQ universe — without a Bloomberg terminal.
 
